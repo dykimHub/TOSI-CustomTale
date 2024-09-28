@@ -2,9 +2,11 @@ package com.tosi.customtale.repository;
 
 import com.tosi.customtale.entity.CustomTale;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface CustomTaleRepository extends JpaRepository<CustomTale, Integer> {
 
 //    // userId로 CustomTale 조회

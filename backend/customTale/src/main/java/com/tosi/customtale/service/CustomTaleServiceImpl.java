@@ -2,8 +2,13 @@ package com.tosi.customtale.service;
 
 import com.tosi.customtale.common.exception.CustomException;
 import com.tosi.customtale.common.exception.ExceptionCode;
+import com.tosi.customtale.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.CustomResponseDto;
+import com.tosi.customtale.dto.CustomTaleDto;
 import com.tosi.customtale.dto.TalePageResponseDto;
+import com.tosi.customtale.entity.CustomTale;
+import com.tosi.customtale.repository.CustomTaleRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -18,8 +23,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class CustomTaleServiceImpl implements CustomTaleService {
-    private final RestTemplate restTemplate;
     private final S3Service s3Service;
+    private final CustomTaleRepository customTaleRepository;
+    private final RestTemplate restTemplate;
     @Value("${service.user.url}")
     private String userURL;
 
@@ -27,7 +33,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 회원 서비스로 토큰을 보내고 인증이 완료되면 회원 번호를 반환합니다.
      *
      * @param accessToken 로그인한 회원의 토큰
-     * @return 로그인한 회원의 회원 번호
+     * @return 회원 번호
      * @throws CustomException 인증에 성공하지 못하면 예외 처리
      */
     @Override
@@ -48,7 +54,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 커스텀 동화 페이지를 생성합니다.
      * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
      *
-     * @param customResponseDto 커스텀 동화 내용과 이미지 S3Key가 담긴 객체
+     * @param customResponseDto 커스텀 동화 내용과 이미지 S3 Key가 담긴 객체
      * @return TalePageResponse 객체 리스트
      */
     @Override
@@ -75,6 +81,22 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         }
 
         return talePageResponseDtoList;
+    }
+
+    /**
+     * 생성된 커스텀 동화와 관련 정보를 저장합니다.
+     *
+     * @param userId 회원 번호
+     * @param customTaleDto 커스텀 동화, 제목, 공개 여부 등이 담긴 CustomTaleDto 객체
+     * @return 커스텀 동화 저장에 성공하면 SuccessResponse 객체 반환
+     */
+    @Transactional
+    @Override
+    public SuccessResponse addCustomTale(Long userId, CustomTaleDto customTaleDto) {
+        CustomTale customTale = CustomTale.of(customTaleDto);
+        customTaleRepository.save(customTale);
+
+        return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
 
 
