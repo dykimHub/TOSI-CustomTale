@@ -1,5 +1,6 @@
 package com.tosi.customtale.controller;
 
+import com.tosi.customtale.dto.CustomResponseDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
 import com.tosi.customtale.service.CustomTaleService;
 import com.tosi.customtale.service.CreateCustomTaleService;
@@ -19,10 +20,11 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 생성 요청")
     @PostMapping
-    public ResponseEntity<String> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
-        String multiChatMessage = createCustomTaleService.createCustomTale(accessToken, customTaleRequestDto);
+    public ResponseEntity<CustomResponseDto> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
+        CustomResponseDto customResponseDto = createCustomTaleService.createCustomTale(customTaleRequestDto);
         return ResponseEntity.ok()
-                .body(multiChatMessage);
+                .body(customResponseDto);
     }
 
 
