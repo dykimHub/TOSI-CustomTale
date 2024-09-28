@@ -4,6 +4,6 @@ import com.tosi.customtale.dto.CustomResponseDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
 
 public interface CreateCustomTaleService {
-    CustomResponseDto createCustomTale(CustomTaleRequestDto customTaleRequestDto);
+    CustomResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto);
 
 }

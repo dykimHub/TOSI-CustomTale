@@ -1,19 +1,17 @@
 package com.tosi.customtale.dto;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomResponseDto {
     private String customTale;
-    private String customImageURL;
+    private String customImageS3Key;
 
     @Builder
-    public CustomResponseDto(String customTale, String customImageURL) {
+    public CustomResponseDto(String customTale, String customImageS3Key) {
         this.customTale = customTale;
-        this.customImageURL = customImageURL;
+        this.customImageS3Key = customImageS3Key;
     }
 }

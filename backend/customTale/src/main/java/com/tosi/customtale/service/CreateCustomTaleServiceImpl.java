@@ -31,6 +31,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     private final ChatGptProperties chatGptProperties;
     private final DallEProperties dalleProperties;
     private final RestTemplate restTemplate;
+    private final S3Service s3Service;
     @Value("${openai.api-key}")
     private String apiKey;
 
@@ -38,11 +39,12 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
      * 사용자 정보, 배경, 키워드를 바탕으로 커스텀 동화 생성을 요청하고 응답에서 추출합니다.
      * 생성된 커스텀 동화를 바탕으로 OpenAI API에 삽화 생성을 요청하고 응답에서 추출합니다.
      *
+     * @param userId
      * @param customTaleRequestDto 커스텀 동화를 만들 때 필요한 정보가 담긴 CustomTaleRequestDto 객체
      * @return OpenAI API의 응답만 추출한 문자열
      */
     @Override
-    public CustomResponseDto createCustomTale(CustomTaleRequestDto customTaleRequestDto) {
+    public CustomResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto) {
         // 프롬프트 생성 및 시스템 메시지 추가
         List<MultiChatMessage> chatMessages = new ArrayList<>();
         String customTalePrompt = customTaleRequestDto.getCustomTalePrompt();
@@ -50,10 +52,11 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
 
         String customTale = processMultiChatRequest(chatMessages).get(1).getContent();
         String customImageURL = processImageRequest(customTale, customTaleRequestDto).getData().get(0).getUrl();
+        String customImageS3Key = s3Service.addCustomImageToS3(customImageURL, userId);
 
         return CustomResponseDto.builder()
                 .customTale(customTale)
-                .customImageURL(customImageURL)
+                .customImageS3Key(customImageS3Key)
                 .build();
 
     }
