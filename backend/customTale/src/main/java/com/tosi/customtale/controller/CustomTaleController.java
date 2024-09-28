@@ -1,25 +1,31 @@
 package com.tosi.customtale.controller;
-import com.ssafy.tosi.s3.S3Controller;
+
+import com.tosi.customtale.dto.CustomTaleRequestDto;
+import com.tosi.customtale.service.CustomTaleService;
+import com.tosi.customtale.service.CreateCustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-
+@Slf4j
+@RequestMapping("/api/custom-tales")
+@RequiredArgsConstructor
 @RestController
 public class CustomTaleController {
-//    private final CustomTaleService customTaleService;
-//    private final S3Controller s3Controller;
-//    @Autowired
-//    public CustomTaleController(HttpServletRequest request, CustomTaleService customTaleService, S3Controller s3Controller) {
-//        this.customTaleService = customTaleService;
-//        this.s3Controller = s3Controller;
-//    }
+    private final CustomTaleService customTaleService;
+    private final CreateCustomTaleService createCustomTaleService;
+
+    @Operation(summary = "커스텀 동화 생성 요청")
+    @PostMapping
+    public ResponseEntity<String> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
+        String multiChatMessage = createCustomTaleService.createCustomTale(accessToken, customTaleRequestDto);
+        return ResponseEntity.ok()
+                .body(multiChatMessage);
+    }
+
+
 //    @Operation(summary="커스텀 동화 상세조회")
 //    @GetMapping("/customtale/{customTaleId}")
 //    public ResponseEntity<?> getCustomTale(HttpServletRequest request, @PathVariable Integer customTaleId) {
