@@ -2,13 +2,16 @@ package com.tosi.customtale.controller;
 
 import com.tosi.customtale.dto.CustomResponseDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
-import com.tosi.customtale.service.CustomTaleService;
+import com.tosi.customtale.dto.TalePageResponseDto;
 import com.tosi.customtale.service.CreateCustomTaleService;
+import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RequestMapping("/api/custom-tales")
@@ -22,9 +25,17 @@ public class CustomTaleController {
     @PostMapping
     public ResponseEntity<CustomResponseDto> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        CustomResponseDto customResponseDto = createCustomTaleService.createCustomTale(customTaleRequestDto);
+        CustomResponseDto customResponseDto = createCustomTaleService.createCustomTale(userId, customTaleRequestDto);
         return ResponseEntity.ok()
                 .body(customResponseDto);
+    }
+
+    @Operation(summary = "커스텀 동화 각 페이지 생성")
+    @PostMapping("/read")
+    public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomResponseDto customResponseDto) {
+        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.createCustomTalePages(customResponseDto);
+        return ResponseEntity.ok()
+                .body(talePageResponseDtoList);
     }
 
 

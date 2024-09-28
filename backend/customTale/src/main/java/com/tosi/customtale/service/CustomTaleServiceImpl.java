@@ -2,6 +2,8 @@ package com.tosi.customtale.service;
 
 import com.tosi.customtale.common.exception.CustomException;
 import com.tosi.customtale.common.exception.ExceptionCode;
+import com.tosi.customtale.dto.CustomResponseDto;
+import com.tosi.customtale.dto.TalePageResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -10,13 +12,24 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RequiredArgsConstructor
 @Service
 public class CustomTaleServiceImpl implements CustomTaleService {
     private final RestTemplate restTemplate;
+    private final S3Service s3Service;
     @Value("${service.user.url}")
     private String userURL;
 
+    /**
+     * 회원 서비스로 토큰을 보내고 인증이 완료되면 회원 번호를 반환합니다.
+     *
+     * @param accessToken 로그인한 회원의 토큰
+     * @return 로그인한 회원의 회원 번호
+     * @throws CustomException 인증에 성공하지 못하면 예외 처리
+     */
     @Override
     public Long findUserAuthorization(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
@@ -31,14 +44,40 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         }
     }
 
+    /**
+     * 커스텀 동화 페이지를 생성합니다.
+     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
+     *
+     * @param customResponseDto 커스텀 동화 내용과 이미지 S3Key가 담긴 객체
+     * @return TalePageResponse 객체 리스트
+     */
+    @Override
+    public List<TalePageResponseDto> createCustomTalePages(CustomResponseDto customResponseDto) {
+        String[] lines = customResponseDto.getCustomTale().split("\n");
+        String imageS3URL = s3Service.findS3URL(customResponseDto.getCustomImageS3Key());
 
-//    private final CustomTaleRepository customTaleRepository;
-//
-//    @Autowired
-//    public CustomTaleService(CustomTaleRepository customTaleRepository) {
-//        this.customTaleRepository = customTaleRepository;
-//    }
-//
+        int pageNum = 1;
+        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
+
+        for (int i = 0; i < lines.length; i += 2) {
+            String line1 = lines[i];
+            // line1이 마지막 문장이면 다음 문장은 빈 문장
+            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
+
+            talePageResponseDtoList.add(
+                    TalePageResponseDto.builder()
+                            .leftNo(pageNum++)
+                            .left(imageS3URL)
+                            .rightNo(pageNum++)
+                            .right(line1 + "\n" + line2)
+                            .build()
+            );
+        }
+
+        return talePageResponseDtoList;
+    }
+
+
 //
 //    //customTaleId에 해당하는 CustomTale 엔터티 (커스텀 동화 상세조회)
 //    public Optional<CustomTale> getCustomTale(Integer customTaleId) {
@@ -80,61 +119,5 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 //        return true;
 //    }
 //
-//    public String split_sentences(String string) {
-//        string = string.replace("n", "");
-//        string = string = string.replace("\\", "");
-//
-//        StringBuilder sb = new StringBuilder();
-//        char[] str2char = string.toCharArray();
-//
-//        boolean flag = false;
-//        for (char c : str2char) {
-//            sb.append(c);
-//
-//            if (!Character.isLetterOrDigit(c) && !Character.isWhitespace(c) && (c != ',')) {
-//                if (c == '"' && !flag) { // 첫번째 따옴표이면
-//                    flag = true; // 따옴표 flag
-//                } else if (c == '"' && flag) { // 두번째 따옴표라면
-//                    flag = false; // 따옴표 flag 취소
-//                    sb.append("\n"); // 띄우기
-//                } else if (!flag) { // 따옴표 안 문장이 아니라면
-//                    sb.append("\n"); // 띄우기
-//                }
-//
-//            }
-//        }
-//
-//        return sb.toString();
-//    }
-//
-//    public List<Page> paging(String splitted_contents) {
-//        int p = 1;
-//        List<Page> pages = new ArrayList<>();
-//
-//        String[] sentences = splitted_contents.split("\n");
-//
-//        for (int j = 0; j < sentences.length - 1; j += 2) {
-//            Page page = Page.builder()
-//                    .leftNo(p)
-//                    .rightNo(p + 1)
-//                    .right(sentences[j] + "\n" + sentences[j + 1])
-//                    .flipped(false)
-//                    .build();
-//            pages.add(page);
-//            p += 2;
-//        }
-//// 문장이 홀수개 일 때
-//        if (sentences.length % 2 != 0) {
-//            Page page = Page.builder()
-//                    .leftNo(p)
-//                    .rightNo(p + 1)
-//                    .right(sentences[sentences.length - 1])
-//                    .build();
-//
-//            pages.add(page);
-//        }
-//
-//        return pages;
-//    }
 
 }
