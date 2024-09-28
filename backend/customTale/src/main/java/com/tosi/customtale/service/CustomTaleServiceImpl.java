@@ -1,6 +1,35 @@
 package com.tosi.customtale.service;
 
+import com.tosi.customtale.common.exception.CustomException;
+import com.tosi.customtale.common.exception.ExceptionCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@RequiredArgsConstructor
+@Service
 public class CustomTaleServiceImpl implements CustomTaleService {
+    private final RestTemplate restTemplate;
+    @Value("${service.user.url}")
+    private String userURL;
+
+    @Override
+    public Long findUserAuthorization(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", accessToken);
+        HttpEntity<String> httpEntity = new HttpEntity<>(headers);
+        try {
+            Long userId = restTemplate.exchange(userURL + "auth",
+                    HttpMethod.GET, httpEntity, Long.class).getBody();
+            return userId;
+        } catch (Exception e) {
+            throw new CustomException(ExceptionCode.INVALID_TOKEN);
+        }
+    }
 
 
 //    private final CustomTaleRepository customTaleRepository;

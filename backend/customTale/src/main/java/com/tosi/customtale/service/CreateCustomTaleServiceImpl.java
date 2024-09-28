@@ -49,10 +49,11 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
         chatMessages.add(new MultiChatMessage(ROLE_SYSTEM, customTalePrompt));
 
         String customTale = processMultiChatRequest(chatMessages).get(1).getContent();
-
+        String customImageURL = processImageRequest(customTale, customTaleRequestDto).getData().get(0).getUrl();
 
         return CustomResponseDto.builder()
                 .customTale(customTale)
+                .customImageURL(customImageURL)
                 .build();
 
     }
@@ -72,7 +73,21 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     }
 
     /**
-     * ChatGPT 설정 정보, 채팅 메시지 리스트를 담은 MultiChatRequest 객체를 생성합니다.
+     * 커스텀 이미지 생성 과정을 처리합니다.
+     *
+     * @param customTale 생성된 커스텀 동화
+     * @param customTaleRequestDto 사용자 정보
+     * @return 커스텀 이미지 주소를 담은 ImageResponse 객체
+     */
+    private ImageResponse processImageRequest(String customTale, CustomTaleRequestDto customTaleRequestDto) {
+        CustomImageRequestDto customImageRequestDto = makeImageRequest(customTale, customTaleRequestDto);
+        ImageResponse imageResponse = this.getResponse(this.buildHttpEntity(customImageRequestDto), ImageResponse.class, dalleProperties.getApiURL());
+
+        return imageResponse;
+    }
+
+    /**
+     * ChatGPT 설정 정보, 채팅 메시지 리스트를 담은 채팅 요청 객체를 생성합니다.
      *
      * @param chatMessages 사용자와 시스템 간의 채팅 메시지 리스트
      * @return OpenAI ChatGPT API 요청을 위한 MultiChatRequest 객체
@@ -85,6 +100,24 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
                 chatGptProperties.getTemperature(),
                 chatGptProperties.getTopP()
         );
+    }
+
+    /**
+     * DALL-E 설정 정보, 프롬프트를 담은 이미지 요청 객체를 생성합니다.
+     *
+     * @param customTale 생성된 커스텀 동화
+     * @param customTaleRequestDto 사용자 정보
+     * @return OpenAI DALL-E API 요청을 위한 CustomImageRequestDto 객체
+     */
+    private CustomImageRequestDto makeImageRequest(String customTale, CustomTaleRequestDto customTaleRequestDto) {
+        return CustomImageRequestDto.builder()
+                .model(dalleProperties.getModel())
+                .size(dalleProperties.getSize())
+                .quality(dalleProperties.getQuality())
+                .n(dalleProperties.getN())
+                .customTale(customTale)
+                .customTaleRequestDto(customTaleRequestDto)
+                .build();
     }
 
     /**
