@@ -14,7 +14,9 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "custom_tales")
+@Table(name = "custom_tales", indexes = {
+        @Index(name = "idx_user_id", columnList = "user_id")
+})
 public class CustomTale {
 
     @Id
