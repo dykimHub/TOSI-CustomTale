@@ -69,18 +69,20 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 상세 조회")
     @GetMapping("/{customTaleId}")
-    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@PathVariable Long customTaleId) {
+    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
         List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(customTaleId);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
 
-
-//    @Operation(summary="내가 만든 동화 삭제")
-//    @DeleteMapping("/customtale/{customTaleId}")
-//    public ResponseEntity<?> deleteCustomTale(HttpServletRequest request, @PathVariable Integer customTaleId) {
-//        customTaleService.deleteCustomTale(customTaleId);
-//        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//    }
+    @Operation(summary = "내가 만든 동화 삭제")
+    @DeleteMapping("/{customTaleId}")
+    public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
+        SuccessResponse successResponse = customTaleService.deleteCustomTale(customTaleId);
+        return ResponseEntity.ok()
+                .body(successResponse);
+    }
 
 }

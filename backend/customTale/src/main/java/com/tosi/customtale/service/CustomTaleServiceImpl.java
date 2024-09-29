@@ -3,15 +3,16 @@ package com.tosi.customtale.service;
 import com.tosi.customtale.common.exception.CustomException;
 import com.tosi.customtale.common.exception.ExceptionCode;
 import com.tosi.customtale.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.dto.CustomTaleDetailDto;
 import com.tosi.customtale.dto.CustomTaleDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.dto.TalePageResponseDto;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
@@ -35,7 +36,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     /**
      * 해당 회원이 생성한 커스텀 동화 목록을 반환합니다.
      *
-     * @param userId 로그인한 회원 번호
+     * @param userId   로그인한 회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
      * @return CustomTaleDto 객체 리스트
      */
@@ -72,24 +73,37 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
-     * 커스텀 동화 번호로 커스텀 동화 상세 정보(내용 포함)를 조회합니다.
      * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
-     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
+     *
      *
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
-     * @throws CustomException 커스텀 동화가 존재하지 않으면 예외 처리
      */
     @Cacheable(value = "customTaleDetail", key = "#customTaleId")
     @Override
     public List<TalePageResponseDto> findCustomTaleDetail(Long customTaleId) {
-        CustomTaleDetailDto customTaleDetailDto = customTaleRepository.findCustomTaleDetail(customTaleId)
-                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
+        CustomTaleDetailDto customTaleDetailDto = findCustomTaleDetailDto(customTaleId);
 
         CustomTaleResponseDto customTaleResponseDto = CustomTaleResponseDto.of(customTaleDetailDto.getCustomTale(), customTaleDetailDto.getCustomImageS3Key());
         List<TalePageResponseDto> talePageResponseDtoList = createCustomTalePages(customTaleResponseDto);
 
         return talePageResponseDtoList;
+    }
+
+    /**
+     * 해당 커스텀 동화를 삭제합니다.
+     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에서 삭제합니다.
+     *
+     * @param customTaleId 커스텀 동화 번호
+     * @return 커스텀 동화가 삭제되면 SuccessResponse를 반환합니다.
+     */
+    @CacheEvict(value = "customTaleDetail", key = "#customTaleId")
+    @Transactional
+    @Override
+    public SuccessResponse deleteCustomTale(Long customTaleId) {
+        findCustomTaleDetailDto(customTaleId);
+        customTaleRepository.deleteById(customTaleId);
+        return SuccessResponse.of("해당 커스텀 동화가 성공적으로 삭제되었습니다.");
     }
 
     /**
@@ -126,6 +140,18 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
+     * 커스텀 동화 번호로 커스텀 동화 상세 정보(내용 포함)를 조회합니다.
+     *
+     * @param customTaleId 커스텀 동화 번호
+     * @return CustomTaleDetailDto 객체
+     * @throws CustomException 커스텀 동화가 존재하지 않으면 예외 처리
+     */
+    public CustomTaleDetailDto findCustomTaleDetailDto(Long customTaleId) {
+        return customTaleRepository.findCustomTaleDetail(customTaleId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
+    }
+
+    /**
      * 회원 서비스로 토큰을 보내고 인증이 완료되면 회원 번호를 반환합니다.
      *
      * @param accessToken 로그인한 회원의 토큰
@@ -145,6 +171,8 @@ public class CustomTaleServiceImpl implements CustomTaleService {
             throw new CustomException(ExceptionCode.INVALID_TOKEN);
         }
     }
+
+
 
 
 //
