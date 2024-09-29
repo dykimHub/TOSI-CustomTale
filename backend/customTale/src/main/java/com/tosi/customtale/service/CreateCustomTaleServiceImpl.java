@@ -37,11 +37,12 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
 
     /**
      * 사용자 정보, 배경, 키워드를 바탕으로 커스텀 동화 생성을 요청하고 응답에서 추출합니다.
-     * 생성된 커스텀 동화를 바탕으로 OpenAI API에 삽화 생성을 요청하고 응답에서 추출합니다.
+     * 생성된 커스텀 동화를 바탕으로 OpenAI API에 이미지 생성을 요청하고 응답에서 추출합니다.
+     * 생성된 이미지를 S3에 저장합니다.
      *
-     * @param userId
+     * @param userId 회원 번호
      * @param customTaleRequestDto 커스텀 동화를 만들 때 필요한 정보가 담긴 CustomTaleRequestDto 객체
-     * @return OpenAI API의 응답만 추출한 문자열
+     * @return 커스텀 동화, 저장된 이미지의 S3 Key를 담은 CustomTaleRequestDto 객체 반환
      */
     @Override
     public CustomResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto) {

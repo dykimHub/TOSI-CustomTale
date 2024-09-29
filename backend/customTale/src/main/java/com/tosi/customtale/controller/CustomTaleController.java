@@ -1,15 +1,17 @@
 package com.tosi.customtale.controller;
 
+import com.querydsl.core.Tuple;
 import com.tosi.customtale.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.CustomResponseDto;
-import com.tosi.customtale.dto.CustomTaleDto;
-import com.tosi.customtale.dto.CustomTaleRequestDto;
-import com.tosi.customtale.dto.TalePageResponseDto;
+import com.tosi.customtale.dto.*;
+import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +34,25 @@ public class CustomTaleController {
                 .body(customResponseDto);
     }
 
+    @Operation(summary = "내가 만든 동화 목록")
+    @GetMapping
+    public ResponseEntity<List<CustomTaleDto>> findCustomTales(@RequestHeader("Authorization") String accessToken,
+                                                               @PageableDefault(size = 9, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
+        List<CustomTaleDto> customTaleDtoList = customTaleService.findCustomTaleList(userId, pageable);
+        return ResponseEntity.ok()
+                .body(customTaleDtoList);
+    }
+
+    @Operation(summary = "커스텀 동화 저장")
+    @PostMapping("/save")
+    public ResponseEntity<SuccessResponse> addCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleDetailDto customTaleDetailDto) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
+        SuccessResponse successResponse = customTaleService.addCustomTale(userId, customTaleDetailDto);
+        return ResponseEntity.ok()
+                .body(successResponse);
+    }
+
     @Operation(summary = "커스텀 동화 각 페이지 생성")
     @PostMapping("/read")
     public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomResponseDto customResponseDto) {
@@ -40,14 +61,7 @@ public class CustomTaleController {
                 .body(talePageResponseDtoList);
     }
 
-    @Operation(summary = "커스텀 동화 저장")
-    @PostMapping("/save")
-    public ResponseEntity<SuccessResponse> addCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleDto customTaleDto) {
-        Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.addCustomTale(userId, customTaleDto);
-        return ResponseEntity.ok()
-                .body(successResponse);
-    }
+
 
 
 //    @Operation(summary="커스텀 동화 상세조회")
@@ -56,17 +70,7 @@ public class CustomTaleController {
 //        Optional<CustomTale> customTale = customTaleService.getCustomTale(customTaleId);
 //        return ResponseEntity.ok(customTale);
 //    }
-//    @Operation(summary="내가 만든 동화 목록")
-//    @GetMapping("/customtale/user")
-//    public ResponseEntity<?> getCustomTalesByUserId(HttpServletRequest request, HttpServletResponse response) {
-//        Integer userId = (Integer) request.getAttribute("userId");
-//        List<CustomTale> customTales = customTaleService.getCustomTalesByUserId(userId);
-//        System.out.println("내가 만든 동화 목록:");
-//        for (CustomTale tale : customTales) {
-//            System.out.println(tale.toString());
-//        }
-//        return ResponseEntity.ok(customTales);
-//    }
+
 //    @Operation(summary="공개중인 커스텀 동화 목록")
 //    @GetMapping("/customtale")
 //    public ResponseEntity<?> getCustomTales(HttpServletRequest request) {

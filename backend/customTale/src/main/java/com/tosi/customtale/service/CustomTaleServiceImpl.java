@@ -4,6 +4,7 @@ import com.tosi.customtale.common.exception.CustomException;
 import com.tosi.customtale.common.exception.ExceptionCode;
 import com.tosi.customtale.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.CustomResponseDto;
+import com.tosi.customtale.dto.CustomTaleDetailDto;
 import com.tosi.customtale.dto.CustomTaleDto;
 import com.tosi.customtale.dto.TalePageResponseDto;
 import com.tosi.customtale.entity.CustomTale;
@@ -11,6 +12,9 @@ import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,24 +34,31 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     private String userURL;
 
     /**
-     * 회원 서비스로 토큰을 보내고 인증이 완료되면 회원 번호를 반환합니다.
+     * 회원이 생성한 커스텀 동화를 반환합니다.
      *
-     * @param accessToken 로그인한 회원의 토큰
-     * @return 회원 번호
-     * @throws CustomException 인증에 성공하지 못하면 예외 처리
+     * @param userId 로그인한 회원 번호
+     * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
+     * @return CustomTaleDto 객체 리스트
      */
     @Override
-    public Long findUserAuthorization(String accessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", accessToken);
-        HttpEntity<String> httpEntity = new HttpEntity<>(headers);
-        try {
-            Long userId = restTemplate.exchange(userURL + "auth",
-                    HttpMethod.GET, httpEntity, Long.class).getBody();
-            return userId;
-        } catch (Exception e) {
-            throw new CustomException(ExceptionCode.INVALID_TOKEN);
-        }
+    public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
+        return customTaleRepository.findCustomTaleListByUserId(userId, pageable);
+    }
+
+    /**
+     * 생성된 커스텀 동화와 관련 정보를 저장합니다.
+     *
+     * @param userId              회원 번호
+     * @param customTaleDetailDto 커스텀 동화, 제목, 공개 여부 등이 담긴 CustomTaleDto 객체
+     * @return 커스텀 동화 저장에 성공하면 SuccessResponse 객체 반환
+     */
+    @Transactional
+    @Override
+    public SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto) {
+        CustomTale customTale = CustomTale.of(customTaleDetailDto);
+        customTaleRepository.save(customTale);
+
+        return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
 
     /**
@@ -84,19 +95,24 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
-     * 생성된 커스텀 동화와 관련 정보를 저장합니다.
+     * 회원 서비스로 토큰을 보내고 인증이 완료되면 회원 번호를 반환합니다.
      *
-     * @param userId 회원 번호
-     * @param customTaleDto 커스텀 동화, 제목, 공개 여부 등이 담긴 CustomTaleDto 객체
-     * @return 커스텀 동화 저장에 성공하면 SuccessResponse 객체 반환
+     * @param accessToken 로그인한 회원의 토큰
+     * @return 회원 번호
+     * @throws CustomException 인증에 성공하지 못하면 예외 처리
      */
-    @Transactional
     @Override
-    public SuccessResponse addCustomTale(Long userId, CustomTaleDto customTaleDto) {
-        CustomTale customTale = CustomTale.of(customTaleDto);
-        customTaleRepository.save(customTale);
-
-        return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
+    public Long findUserAuthorization(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", accessToken);
+        HttpEntity<String> httpEntity = new HttpEntity<>(headers);
+        try {
+            Long userId = restTemplate.exchange(userURL + "auth",
+                    HttpMethod.GET, httpEntity, Long.class).getBody();
+            return userId;
+        } catch (Exception e) {
+            throw new CustomException(ExceptionCode.INVALID_TOKEN);
+        }
     }
 
 
