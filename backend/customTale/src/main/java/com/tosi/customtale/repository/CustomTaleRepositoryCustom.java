@@ -13,4 +13,6 @@ public interface CustomTaleRepositoryCustom {
     List<CustomTaleDto> findCustomTaleListByUserId(Long userId, Pageable pageable);
 
     List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable);
+
+    Optional<CustomTaleDetailDto> findCustomTaleDetail(Long customTaleId);
 }

@@ -67,6 +67,14 @@ public class CustomTaleController {
                 .body(successResponse);
     }
 
+    @Operation(summary = "커스텀 동화 상세 조회")
+    @GetMapping("/{customTaleId}")
+    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@PathVariable Long customTaleId) {
+        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(customTaleId);
+        return ResponseEntity.ok()
+                .body(talePageResponseDtoList);
+    }
+
 
 //    @Operation(summary="내가 만든 동화 삭제")
 //    @DeleteMapping("/customtale/{customTaleId}")

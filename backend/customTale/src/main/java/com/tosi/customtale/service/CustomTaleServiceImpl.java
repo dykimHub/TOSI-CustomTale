@@ -12,6 +12,7 @@ import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -68,6 +69,27 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         customTaleRepository.save(customTale);
 
         return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
+    }
+
+    /**
+     * 커스텀 동화 번호로 커스텀 동화 상세 정보(내용 포함)를 조회합니다.
+     * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
+     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
+     *
+     * @param customTaleId 커스텀 동화 번호
+     * @return TalePageResponse 객체 리스트
+     * @throws CustomException 커스텀 동화가 존재하지 않으면 예외 처리
+     */
+    @Cacheable(value = "customTaleDetail", key = "#customTaleId")
+    @Override
+    public List<TalePageResponseDto> findCustomTaleDetail(Long customTaleId) {
+        CustomTaleDetailDto customTaleDetailDto = customTaleRepository.findCustomTaleDetail(customTaleId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
+
+        CustomTaleResponseDto customTaleResponseDto = CustomTaleResponseDto.of(customTaleDetailDto.getCustomTale(), customTaleDetailDto.getCustomImageS3Key());
+        List<TalePageResponseDto> talePageResponseDtoList = createCustomTalePages(customTaleResponseDto);
+
+        return talePageResponseDtoList;
     }
 
     /**

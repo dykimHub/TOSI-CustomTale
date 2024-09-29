@@ -82,6 +82,28 @@ public class CustomTaleRepositoryCustomImpl implements CustomTaleRepositoryCusto
     }
 
     /**
+     * 해당 번호의 CustomTale 엔티티를 CustomDetailDto로 변환하여 반환합니다.
+     *
+     * @param customTaleId 커스텀 동화 번호
+     * @return Optional로 감싼 CustomTaleDetailDto 객체
+     */
+    @Override
+    public Optional<CustomTaleDetailDto> findCustomTaleDetail(Long customTaleId) {
+        QCustomTale qCustomTale = QCustomTale.customTale;
+        return Optional.ofNullable(queryFactory.select(new QCustomTaleDetailDto(
+                        qCustomTale.userId,
+                        qCustomTale.title,
+                        qCustomTale.content,
+                        qCustomTale.imageS3Key,
+                        qCustomTale.isPublic))
+                .from(qCustomTale)
+                .where(qCustomTale.customTaleId.eq(customTaleId))
+                .fetchOne()
+        );
+
+    }
+
+    /**
      * Sort 객체(정렬 기준 리스트)를 OrderSpecifier 객체 리스트로 변환합니다.
      *
      * @param sort        Sort 객체

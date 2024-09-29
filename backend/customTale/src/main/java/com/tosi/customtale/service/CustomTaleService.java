@@ -17,6 +17,8 @@ public interface CustomTaleService {
 
     SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto);
 
+    List<TalePageResponseDto> findCustomTaleDetail(Long customTaleId);
+
     List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto);
 
     Long findUserAuthorization(String accessToken);
