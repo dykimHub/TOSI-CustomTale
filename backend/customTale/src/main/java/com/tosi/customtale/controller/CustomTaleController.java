@@ -1,9 +1,7 @@
 package com.tosi.customtale.controller;
 
-import com.querydsl.core.Tuple;
 import com.tosi.customtale.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
-import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,11 +25,19 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 생성 요청")
     @PostMapping
-    public ResponseEntity<CustomResponseDto> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
+    public ResponseEntity<CustomTaleResponseDto> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        CustomResponseDto customResponseDto = createCustomTaleService.createCustomTale(userId, customTaleRequestDto);
+        CustomTaleResponseDto customTaleResponseDto = createCustomTaleService.createCustomTale(userId, customTaleRequestDto);
         return ResponseEntity.ok()
-                .body(customResponseDto);
+                .body(customTaleResponseDto);
+    }
+
+    @Operation(summary = "커스텀 동화 각 페이지 생성")
+    @PostMapping("/read")
+    public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
+        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.createCustomTalePages(customTaleResponseDto);
+        return ResponseEntity.ok()
+                .body(talePageResponseDtoList);
     }
 
     @Operation(summary = "내가 만든 동화 목록")
@@ -40,6 +46,14 @@ public class CustomTaleController {
                                                                @PageableDefault(size = 9, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
         List<CustomTaleDto> customTaleDtoList = customTaleService.findCustomTaleList(userId, pageable);
+        return ResponseEntity.ok()
+                .body(customTaleDtoList);
+    }
+
+    @Operation(summary = "공개중인 커스텀 동화 목록")
+    @GetMapping("/public")
+    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@PageableDefault(size = 9, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        List<CustomTaleDto> customTaleDtoList = customTaleService.findPublicCustomTaleList(pageable);
         return ResponseEntity.ok()
                 .body(customTaleDtoList);
     }
@@ -53,37 +67,7 @@ public class CustomTaleController {
                 .body(successResponse);
     }
 
-    @Operation(summary = "커스텀 동화 각 페이지 생성")
-    @PostMapping("/read")
-    public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomResponseDto customResponseDto) {
-        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.createCustomTalePages(customResponseDto);
-        return ResponseEntity.ok()
-                .body(talePageResponseDtoList);
-    }
 
-
-
-
-//    @Operation(summary="커스텀 동화 상세조회")
-//    @GetMapping("/customtale/{customTaleId}")
-//    public ResponseEntity<?> getCustomTale(HttpServletRequest request, @PathVariable Integer customTaleId) {
-//        Optional<CustomTale> customTale = customTaleService.getCustomTale(customTaleId);
-//        return ResponseEntity.ok(customTale);
-//    }
-
-//    @Operation(summary="공개중인 커스텀 동화 목록")
-//    @GetMapping("/customtale")
-//    public ResponseEntity<?> getCustomTales(HttpServletRequest request) {
-//        List<CustomTale> customTales = customTaleService.getCustomTales();
-//        return ResponseEntity.ok(customTales);
-//    }
-
-//    @Operation(summary="내가 만든 동화 공개여부 수정")
-//    @PutMapping("/customtale/{customTaleId}")
-//    public ResponseEntity<?> updateCustomTale(HttpServletRequest request, @PathVariable Integer customTaleId, @RequestParam boolean opened) {
-//        CustomTale updatedCustomTale = customTaleService.putCustomTale(customTaleId, opened);
-//        return ResponseEntity.ok(updatedCustomTale);
-//    }
 //    @Operation(summary="내가 만든 동화 삭제")
 //    @DeleteMapping("/customtale/{customTaleId}")
 //    public ResponseEntity<?> deleteCustomTale(HttpServletRequest request, @PathVariable Integer customTaleId) {

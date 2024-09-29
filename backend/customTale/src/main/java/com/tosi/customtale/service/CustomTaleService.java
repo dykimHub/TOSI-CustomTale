@@ -1,7 +1,7 @@
 package com.tosi.customtale.service;
 
 import com.tosi.customtale.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.CustomResponseDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.dto.CustomTaleDetailDto;
 import com.tosi.customtale.dto.CustomTaleDto;
 import com.tosi.customtale.dto.TalePageResponseDto;
@@ -13,9 +13,11 @@ public interface CustomTaleService {
 
     List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable);
 
+    List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable);
+
     SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto);
 
-    List<TalePageResponseDto> createCustomTalePages(CustomResponseDto customResponseDto);
+    List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto);
 
     Long findUserAuthorization(String accessToken);
 
