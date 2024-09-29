@@ -5,7 +5,6 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -50,7 +49,7 @@ public class S3ServiceImpl implements S3Service {
      * 저장된 이미지의 S3Key를 반환합니다.
      *
      * @param customImageURL OpenAI API가 생성한 이미지 URL
-     * @param userId 로그인한 회원 번호
+     * @param userId         로그인한 회원 번호
      * @return 저장된 이미지의 S3 Key
      */
     @Override

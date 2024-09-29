@@ -4,8 +4,8 @@ package com.tosi.customtale.service;
 import com.tosi.customtale.common.config.ChatGptProperties;
 import com.tosi.customtale.common.config.DallEProperties;
 import com.tosi.customtale.dto.CustomImageRequestDto;
-import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatRequest;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatResponse;
@@ -40,7 +40,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
      * 생성된 커스텀 동화를 바탕으로 OpenAI API에 이미지 생성을 요청하고 응답에서 추출합니다.
      * 생성된 이미지를 S3에 저장합니다.
      *
-     * @param userId 회원 번호
+     * @param userId               회원 번호
      * @param customTaleRequestDto 커스텀 동화를 만들 때 필요한 정보가 담긴 CustomTaleRequestDto 객체
      * @return 커스텀 동화, 저장된 이미지의 S3 Key를 담은 CustomTaleRequestDto 객체 반환
      */
@@ -61,7 +61,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
 
     /**
      * 커스텀 동화 생성 과정을 처리합니다.
-     * 
+     *
      * @param chatMessages 커스텀 동화 프롬프트를 담은 MultiChatMessage 객체 리스트
      * @return 커스텀 동화를 담은 MultiChatResponse 객체
      */
@@ -76,7 +76,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     /**
      * 커스텀 이미지 생성 과정을 처리합니다.
      *
-     * @param customTale 생성된 커스텀 동화
+     * @param customTale           생성된 커스텀 동화
      * @param customTaleRequestDto 사용자 정보
      * @return 커스텀 이미지 주소를 담은 ImageResponse 객체
      */
@@ -106,7 +106,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     /**
      * DALL-E 설정 정보, 프롬프트를 담은 이미지 요청 객체를 생성합니다.
      *
-     * @param customTale 생성된 커스텀 동화
+     * @param customTale           생성된 커스텀 동화
      * @param customTaleRequestDto 사용자 정보
      * @return OpenAI DALL-E API 요청을 위한 CustomImageRequestDto 객체
      */
@@ -137,9 +137,9 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     /**
      * OpenAI API에 HTTP POST 요청을 보내고, 응답을 받아 반환합니다.
      *
-     * @param httpEntity 헤더와 요청 객체를 담은 HttpEntity 객체
+     * @param httpEntity   헤더와 요청 객체를 담은 HttpEntity 객체
      * @param responseType 모든 타입의 반환 객체(여기서는 MultiChatResponse 혹은 ImageResponse)
-     * @param url 요청을 보낼 API
+     * @param url          요청을 보낼 API
      * @return OpneAI API 응답을 지정된 타입(T)으로 변환하여 반환
      */
     private <T> T getResponse(HttpEntity<?> httpEntity, Class<T> responseType, String url) {

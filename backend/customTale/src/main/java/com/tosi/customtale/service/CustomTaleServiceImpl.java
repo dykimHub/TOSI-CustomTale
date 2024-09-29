@@ -74,7 +74,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
      * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
      *
-     * @param userId 회원 번호
+     * @param userId       회원 번호
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
      * @thorws 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
@@ -188,38 +188,5 @@ public class CustomTaleServiceImpl implements CustomTaleService {
             throw new CustomException(ExceptionCode.INVALID_TOKEN);
         }
     }
-
-
-//
-//    //customTaleId에 해당하는 CustomTale 엔터티 (커스텀 동화 상세조회)
-//    public Optional<CustomTale> getCustomTale(Integer customTaleId) {
-//        return customTaleRepository.findById(customTaleId);
-//    }
-//
-//
-//    //opened가 true인 CustomTale 엔터티를 조회 (친구들이 만든 동화보기 목록)
-//    public List<CustomTale> getCustomTales() {
-//        return customTaleRepository.findByOpened(true);
-//    }
-//
-//    //customTaleId에 해당하는 CustomTale 엔터티의 opened 값 변경 (나의 책장 - 내가 만든 동화)
-//    public CustomTale putCustomTale(Integer customTaleId, boolean opened) {
-//        Optional<CustomTale> optionalCustomTale = customTaleRepository.findById(customTaleId);
-//
-//        if (optionalCustomTale.isPresent()) {
-//            CustomTale customTale = optionalCustomTale.get();
-//            customTale.setOpened(opened);
-//            return customTaleRepository.save(customTale);
-//        } else {
-//            return null;
-//        }
-//    }
-//
-//    //customTaleId에 해당하는 CustomTale 엔터티를 삭제
-//    public boolean deleteCustomTale(Integer customTaleId) {
-//        customTaleRepository.deleteById(customTaleId);
-//        return true;
-//    }
-//
 
 }

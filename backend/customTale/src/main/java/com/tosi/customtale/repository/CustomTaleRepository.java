@@ -1,6 +1,5 @@
 package com.tosi.customtale.repository;
 
-import com.tosi.customtale.dto.PublicStatusRequestDto;
 import com.tosi.customtale.entity.CustomTale;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
