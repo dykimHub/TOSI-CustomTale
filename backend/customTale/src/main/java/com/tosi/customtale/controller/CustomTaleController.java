@@ -71,7 +71,7 @@ public class CustomTaleController {
     @GetMapping("/{customTaleId}")
     public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(customTaleId);
+        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }

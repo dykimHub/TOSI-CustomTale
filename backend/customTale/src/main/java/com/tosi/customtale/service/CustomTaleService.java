@@ -14,7 +14,7 @@ public interface CustomTaleService {
 
     SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto);
 
-    List<TalePageResponseDto> findCustomTaleDetail(Long customTaleId);
+    List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId);
 
     SuccessResponse modifyCustomTalePublicStatus(PublicStatusRequestDto publicStatusRequestDto);
 

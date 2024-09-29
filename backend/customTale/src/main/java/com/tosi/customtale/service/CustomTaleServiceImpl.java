@@ -70,21 +70,25 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
+     * 커스텀 동화 상세 내용을 조회한 후, 비공개 커스텀 동화인 경우 본인 확인을 합니다.
      * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
      * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
      *
+     * @param userId 회원 번호
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
+     * @thorws 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
      */
     @Cacheable(value = "customTaleDetail", key = "#customTaleId")
     @Override
-    public List<TalePageResponseDto> findCustomTaleDetail(Long customTaleId) {
+    public List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId) {
         CustomTaleDetailDto customTaleDetailDto = findCustomTaleDetailDto(customTaleId);
 
-        CustomTaleResponseDto customTaleResponseDto = CustomTaleResponseDto.of(customTaleDetailDto.getCustomTale(), customTaleDetailDto.getCustomImageS3Key());
-        List<TalePageResponseDto> talePageResponseDtoList = createCustomTalePages(customTaleResponseDto);
+        // 커스텀 동화 공개 여부가 false인데, 로그인한 회원 번호와 커스텀 동화를 생성한 회원의 번호가 일치하지 않는 경우
+        if (!customTaleDetailDto.getIsPublic() && !customTaleDetailDto.getUserId().equals(userId))
+            throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_PUBLIC);
 
-        return talePageResponseDtoList;
+        return createCustomTalePages(CustomTaleResponseDto.of(customTaleDetailDto.getCustomTale(), customTaleDetailDto.getCustomImageS3Key()));
     }
 
     /**
