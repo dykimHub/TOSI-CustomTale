@@ -1,7 +1,7 @@
 package com.tosi.customtale.entity;
 
 
-import com.tosi.customtale.dto.CustomTaleDto;
+import com.tosi.customtale.dto.CustomTaleDetailDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -19,23 +19,23 @@ public class CustomTale {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int customTaleId;
+    private Long customTaleId;
     @Column(name = "user_id", nullable = false)
-    private int userId;
+    private Long userId;
     @Column(name = "title", nullable = false)
     private String title;
-    @Column(name = "image_s3_key", nullable = false)
+    @Column(name = "image_s3_key", nullable = false, unique = true)
     private String imageS3Key;
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
     @Column(name = "is_public", nullable = false)
-    private boolean isPublic;
+    private Boolean isPublic;
     @CreationTimestamp
     @Column(name = "reg_date", nullable = false)
     private OffsetDateTime regDate;
 
     @Builder
-    public CustomTale(int userId, String title, String imageS3Key, String content, boolean isPublic) {
+    public CustomTale(Long userId, String title, String imageS3Key, String content, Boolean isPublic) {
         this.userId = userId;
         this.title = title;
         this.imageS3Key = imageS3Key;
@@ -43,13 +43,13 @@ public class CustomTale {
         this.isPublic = isPublic;
     }
 
-    public static CustomTale of(CustomTaleDto customTaleDto) {
+    public static CustomTale of(CustomTaleDetailDto customTaleDetailDto) {
         return CustomTale.builder()
-                .userId(customTaleDto.getUserId())
-                .title(customTaleDto.getTitle())
-                .imageS3Key(customTaleDto.getCustomResponseDto().getCustomImageS3Key())
-                .content(customTaleDto.getCustomResponseDto().getCustomTale())
-                .isPublic(customTaleDto.isPublic())
+                .userId(customTaleDetailDto.getUserId())
+                .title(customTaleDetailDto.getTitle())
+                .imageS3Key(customTaleDetailDto.getCustomImageS3Key())
+                .content(customTaleDetailDto.getCustomTale())
+                .isPublic(customTaleDetailDto.getIsPublic())
                 .build();
 
     }

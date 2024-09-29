@@ -21,11 +21,10 @@ public class CustomImageRequestDto {
         this.n = n;
         this.prompt = """
                  %s
-                 1. 이 동화를 대표하는 장면 하나를 그려줘.
+                 1. 이 동화를 대표하는 장면 하나를 그려줘. 말풍선이나 설명은 그리지마. 
                  2. 배경은 %s, 참고해.
-                 3. 3D 애니메이션 디즈니 스타일로 생동감 있게 그려줘.
+                 3. 3D 애니메이션, 디즈니 스타일로 생동감 있게 그려줘.
                  4. %s 아이를 포함시켜줘.
-                 5. 절대 말풍선이나 설명을 넣지마. 오직 그림만으로 표현해.
                  """.formatted(customTale,
                 customTaleRequestDto.getBackGround(),
                 customTaleRequestDto.getChildGender() == 0 ? "남자" : "여자"
