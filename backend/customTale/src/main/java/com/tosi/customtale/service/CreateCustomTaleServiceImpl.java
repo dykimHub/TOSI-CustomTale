@@ -4,7 +4,7 @@ package com.tosi.customtale.service;
 import com.tosi.customtale.common.config.ChatGptProperties;
 import com.tosi.customtale.common.config.DallEProperties;
 import com.tosi.customtale.dto.CustomImageRequestDto;
-import com.tosi.customtale.dto.CustomResponseDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatRequest;
@@ -45,7 +45,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
      * @return 커스텀 동화, 저장된 이미지의 S3 Key를 담은 CustomTaleRequestDto 객체 반환
      */
     @Override
-    public CustomResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto) {
+    public CustomTaleResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto) {
         // 프롬프트 생성 및 시스템 메시지 추가
         List<MultiChatMessage> chatMessages = new ArrayList<>();
         String customTalePrompt = customTaleRequestDto.getCustomTalePrompt();
@@ -55,10 +55,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
         String customImageURL = processImageRequest(customTale, customTaleRequestDto).getData().get(0).getUrl();
         String customImageS3Key = s3Service.addCustomImageToS3(customImageURL, userId);
 
-        return CustomResponseDto.builder()
-                .customTale(customTale)
-                .customImageS3Key(customImageS3Key)
-                .build();
+        return CustomTaleResponseDto.of(customTale, customImageS3Key);
 
     }
 
