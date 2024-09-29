@@ -3,10 +3,7 @@ package com.tosi.customtale.service;
 import com.tosi.customtale.common.exception.CustomException;
 import com.tosi.customtale.common.exception.ExceptionCode;
 import com.tosi.customtale.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.CustomTaleDetailDto;
-import com.tosi.customtale.dto.CustomTaleDto;
-import com.tosi.customtale.dto.CustomTaleResponseDto;
-import com.tosi.customtale.dto.TalePageResponseDto;
+import com.tosi.customtale.dto.*;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
@@ -74,7 +71,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
     /**
      * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
-     *
+     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
      *
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
@@ -88,6 +85,22 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         List<TalePageResponseDto> talePageResponseDtoList = createCustomTalePages(customTaleResponseDto);
 
         return talePageResponseDtoList;
+    }
+
+    /**
+     * 공개 여부 수정에 성공하면 SuccessResponse를 반환합니다.
+     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에서 삭제합니다.
+     *
+     * @param publicStatusRequestDto 커스텀 동화 번호와 공개 여부가 담긴 PublicStatusRequestDto 객체
+     * @return SuccessResponse 객체
+     */
+    @CacheEvict(value = "customTaleDetail", key = "#publicStatusRequestDto.customTaleId")
+    @Transactional
+    @Override
+    public SuccessResponse modifyCustomTalePublicStatus(PublicStatusRequestDto publicStatusRequestDto) {
+        findCustomTaleDetailDto(publicStatusRequestDto.getCustomTaleId());
+        customTaleRepository.modifyCustomTalePublicStatus(publicStatusRequestDto.getCustomTaleId(), publicStatusRequestDto.getIsPublic());
+        return SuccessResponse.of("커스텀 동화 공개 여부가 성공적으로 수정되었습니다.");
     }
 
     /**
@@ -171,8 +184,6 @@ public class CustomTaleServiceImpl implements CustomTaleService {
             throw new CustomException(ExceptionCode.INVALID_TOKEN);
         }
     }
-
-
 
 
 //

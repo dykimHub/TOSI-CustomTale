@@ -76,6 +76,15 @@ public class CustomTaleController {
                 .body(talePageResponseDtoList);
     }
 
+    @Operation(summary = "커스텀 동화 공개 여부 수정")
+    @PutMapping
+    public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @RequestBody PublicStatusRequestDto publicStatusRequestDto) {
+        Long userId = customTaleService.findUserAuthorization(accessToken);
+        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(publicStatusRequestDto);
+        return ResponseEntity.ok()
+                .body(successResponse);
+    }
+
     @Operation(summary = "내가 만든 동화 삭제")
     @DeleteMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
