@@ -1,6 +1,6 @@
 package com.tosi.customtale.repository;
 
-import com.tosi.customtale.dto.CustomTaleDetailDto;
+import com.tosi.customtale.dto.CustomTaleDetailResponseDto;
 import com.tosi.customtale.dto.CustomTaleDto;
 import org.springframework.data.domain.Pageable;
 
@@ -14,5 +14,5 @@ public interface CustomTaleRepositoryCustom {
 
     List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable);
 
-    Optional<CustomTaleDetailDto> findCustomTaleDetail(Long customTaleId);
+    Optional<CustomTaleDetailResponseDto> findCustomTaleDetail(Long customTaleId);
 }

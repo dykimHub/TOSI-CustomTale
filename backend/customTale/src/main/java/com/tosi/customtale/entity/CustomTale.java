@@ -1,7 +1,7 @@
 package com.tosi.customtale.entity;
 
 
-import com.tosi.customtale.dto.CustomTaleDetailDto;
+import com.tosi.customtale.dto.CustomTaleDetailResponseDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,6 +24,8 @@ public class CustomTale {
     private Long customTaleId;
     @Column(name = "user_id", nullable = false)
     private Long userId;
+    @Column(name = "child_id", nullable = false)
+    private Long childId;
     @Column(name = "title", nullable = false)
     private String title;
     @Column(name = "image_s3_key", nullable = false, unique = true)
@@ -37,23 +39,24 @@ public class CustomTale {
     private OffsetDateTime regDate;
 
     @Builder
-    public CustomTale(Long userId, String title, String imageS3Key, String content, Boolean isPublic) {
+    public CustomTale(Long userId, Long childId, String title, String imageS3Key, String content, Boolean isPublic) {
         this.userId = userId;
+        this.childId = childId;
         this.title = title;
         this.imageS3Key = imageS3Key;
         this.content = content;
         this.isPublic = isPublic;
     }
 
-    public static CustomTale of(CustomTaleDetailDto customTaleDetailDto) {
+    public static CustomTale of(Long userId, Long childId, String title, String imageS3Key, String content, Boolean isPublic) {
         return CustomTale.builder()
-                .userId(customTaleDetailDto.getUserId())
-                .title(customTaleDetailDto.getTitle())
-                .imageS3Key(customTaleDetailDto.getCustomImageS3Key())
-                .content(customTaleDetailDto.getCustomTale())
-                .isPublic(customTaleDetailDto.getIsPublic())
+                .userId(userId)
+                .childId(childId)
+                .title(title)
+                .imageS3Key(imageS3Key)
+                .content(content)
+                .isPublic(isPublic)
                 .build();
-
     }
 
 }

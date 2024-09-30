@@ -5,9 +5,9 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.tosi.customtale.dto.CustomTaleDetailDto;
+import com.tosi.customtale.dto.CustomTaleDetailResponseDto;
 import com.tosi.customtale.dto.CustomTaleDto;
-import com.tosi.customtale.dto.QCustomTaleDetailDto;
+import com.tosi.customtale.dto.QCustomTaleDetailResponseDto;
 import com.tosi.customtale.dto.QCustomTaleDto;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.entity.QCustomTale;
@@ -88,10 +88,11 @@ public class CustomTaleRepositoryCustomImpl implements CustomTaleRepositoryCusto
      * @return Optional로 감싼 CustomTaleDetailDto 객체
      */
     @Override
-    public Optional<CustomTaleDetailDto> findCustomTaleDetail(Long customTaleId) {
+    public Optional<CustomTaleDetailResponseDto> findCustomTaleDetail(Long customTaleId) {
         QCustomTale qCustomTale = QCustomTale.customTale;
-        return Optional.ofNullable(queryFactory.select(new QCustomTaleDetailDto(
+        return Optional.ofNullable(queryFactory.select(new QCustomTaleDetailResponseDto(
                         qCustomTale.userId,
+                        qCustomTale.childId,
                         qCustomTale.title,
                         qCustomTale.content,
                         qCustomTale.imageS3Key,
