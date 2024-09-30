@@ -6,6 +6,7 @@ import com.tosi.customtale.common.config.DallEProperties;
 import com.tosi.customtale.dto.CustomImageRequestDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
 import com.tosi.customtale.dto.CustomTaleResponseDto;
+import com.tosi.customtale.dto.TalePageResponseDto;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatRequest;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatResponse;
@@ -38,11 +39,10 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     /**
      * 사용자 정보, 배경, 키워드를 바탕으로 커스텀 동화 생성을 요청하고 응답에서 추출합니다.
      * 생성된 커스텀 동화를 바탕으로 OpenAI API에 이미지 생성을 요청하고 응답에서 추출합니다.
-     * 생성된 이미지를 S3에 저장합니다.
      *
      * @param userId               회원 번호
      * @param customTaleRequestDto 커스텀 동화를 만들 때 필요한 정보가 담긴 CustomTaleRequestDto 객체
-     * @return 커스텀 동화, 저장된 이미지의 S3 Key를 담은 CustomTaleRequestDto 객체 반환
+     * @return 커스텀 동화, 저장된 이미지의 OpenAI API(DallE) URL을 담은 CustomTaleRequestDto 객체 반환
      */
     @Override
     public CustomTaleResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto) {
@@ -53,10 +53,42 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
 
         String customTale = processMultiChatRequest(chatMessages).get(1).getContent();
         String customImageURL = processImageRequest(customTale, customTaleRequestDto).getData().get(0).getUrl();
-        String customImageS3Key = s3Service.addCustomImageToS3(customImageURL, userId);
 
-        return CustomTaleResponseDto.of(customTale, customImageS3Key);
+        return CustomTaleResponseDto.ofDallE(customTale, customImageURL);
 
+    }
+
+    /**
+     * 커스텀 동화 페이지를 생성합니다.
+     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
+     *
+     * @param customTaleResponseDto 커스텀 동화 내용과 DallE 이미지 URL이 담긴 객체
+     * @return TalePageResponse 객체 리스트
+     */
+    @Override
+    public List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto) {
+        String[] lines = customTaleResponseDto.getCustomTale().split("\n");
+        String imageS3URL = customTaleResponseDto.getCustomImageDallEURL();
+
+        int pageNum = 1;
+        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
+
+        for (int i = 0; i < lines.length; i += 2) {
+            String line1 = lines[i];
+            // line1이 마지막 문장이면 다음 문장은 빈 문장
+            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
+
+            talePageResponseDtoList.add(
+                    TalePageResponseDto.builder()
+                            .leftNo(pageNum++)
+                            .left(imageS3URL)
+                            .rightNo(pageNum++)
+                            .right(line1 + "\n" + line2)
+                            .build()
+            );
+        }
+
+        return talePageResponseDtoList;
     }
 
     /**

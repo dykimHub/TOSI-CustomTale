@@ -12,15 +12,13 @@ public interface CustomTaleService {
 
     List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable);
 
-    SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto);
+    SuccessResponse addCustomTale(Long userId, CustomTaleDetailRequestDto customTaleDetailRequestDto);
 
     List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId);
 
     SuccessResponse modifyCustomTalePublicStatus(PublicStatusRequestDto publicStatusRequestDto);
 
     SuccessResponse deleteCustomTale(Long customTaleId);
-
-    List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto);
 
     Long findUserAuthorization(String accessToken);
 

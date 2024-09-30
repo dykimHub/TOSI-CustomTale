@@ -35,7 +35,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      *
      * @param userId   로그인한 회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
-     * @return CustomTaleDto 객체 리스트
+     * @return CustomTaleDto 객체(목록용 -> 내용 제외) 리스트
      */
     @Override
     public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
@@ -46,7 +46,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 공개중인 커스텀 동화 목록을 반환합니다.
      *
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
-     * @return CustomTaleDto 객체 리스트
+     * @return CustomTaleDto 객체(목록용 -> 내용 제외) 리스트
      */
     @Override
     public List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable) {
@@ -54,24 +54,35 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
-     * 생성된 커스텀 동화와 관련 정보를 저장합니다.
+     * DallE URL을 활용하여 이미지를 S3에 저장하고 S3 Key를 반환 받습니다.
+     * 해당 S3 Key, 커스텀 동화 등을 활용하여 CustomTale 엔티티를 생성한 후 저장합니다.
      *
-     * @param userId              회원 번호
-     * @param customTaleDetailDto 커스텀 동화, 제목, 공개 여부 등(내용 제외) 담긴 CustomTaleDto 객체
+     * @param userId                     회원 번호
+     * @param customTaleDetailRequestDto 커스텀 동화 정보가 담긴 CustomTaleDetailRequestDto 객체
      * @return 커스텀 동화 저장에 성공하면 SuccessResponse 객체 반환
      */
     @Transactional
     @Override
-    public SuccessResponse addCustomTale(Long userId, CustomTaleDetailDto customTaleDetailDto) {
-        CustomTale customTale = CustomTale.of(customTaleDetailDto);
+    public SuccessResponse addCustomTale(Long userId, CustomTaleDetailRequestDto customTaleDetailRequestDto) {
+        String customImageS3Key = s3Service.addCustomImageToS3(customTaleDetailRequestDto.getCustomImageDallEURL(), userId);
+
+        CustomTale customTale = CustomTale.of(
+                userId,
+                customTaleDetailRequestDto.getChildId(),
+                customTaleDetailRequestDto.getTitle(),
+                customImageS3Key,
+                customTaleDetailRequestDto.getCustomTale(),
+                customTaleDetailRequestDto.getIsPublic()
+        );
         customTaleRepository.save(customTale);
+
 
         return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
 
     /**
      * 커스텀 동화 상세 내용을 조회한 후, 비공개 커스텀 동화인 경우 본인 확인을 합니다.
-     * 커스텀 동화 내용과 이미지 주소로 CustomTaleResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
+     * 커스텀 동화 내용과 이미지 주소로 CustomTaleDetailResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
      * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
      *
      * @param userId       회원 번호
@@ -82,13 +93,13 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     @Cacheable(value = "customTaleDetail", key = "#customTaleId")
     @Override
     public List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId) {
-        CustomTaleDetailDto customTaleDetailDto = findCustomTaleDetailDto(customTaleId);
+        CustomTaleDetailResponseDto customTaleDetailResponseDto = findCustomTaleDetailDto(customTaleId);
 
         // 커스텀 동화 공개 여부가 false인데, 로그인한 회원 번호와 커스텀 동화를 생성한 회원의 번호가 일치하지 않는 경우
-        if (!customTaleDetailDto.getIsPublic() && !customTaleDetailDto.getUserId().equals(userId))
+        if (!customTaleDetailResponseDto.getIsPublic() && !customTaleDetailResponseDto.getUserId().equals(userId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_PUBLIC);
 
-        return createCustomTalePages(CustomTaleResponseDto.of(customTaleDetailDto.getCustomTale(), customTaleDetailDto.getCustomImageS3Key()));
+        return createCustomTalePages(CustomTaleResponseDto.ofS3(customTaleDetailResponseDto.getCustomTale(), customTaleDetailResponseDto.getCustomImageS3Key()));
     }
 
     /**
@@ -130,8 +141,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * @param customTaleResponseDto 커스텀 동화 내용과 이미지 S3 Key가 담긴 객체
      * @return TalePageResponse 객체 리스트
      */
-    @Override
-    public List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto) {
+    private List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto) {
         String[] lines = customTaleResponseDto.getCustomTale().split("\n");
         String imageS3URL = s3Service.findS3URL(customTaleResponseDto.getCustomImageS3Key());
 
@@ -163,7 +173,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * @return CustomTaleDetailDto 객체
      * @throws CustomException 커스텀 동화가 존재하지 않으면 예외 처리
      */
-    public CustomTaleDetailDto findCustomTaleDetailDto(Long customTaleId) {
+    private CustomTaleDetailResponseDto findCustomTaleDetailDto(Long customTaleId) {
         return customTaleRepository.findCustomTaleDetail(customTaleId)
                 .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
     }

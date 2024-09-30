@@ -32,10 +32,10 @@ public class CustomTaleController {
                 .body(customTaleResponseDto);
     }
 
-    @Operation(summary = "커스텀 동화 각 페이지 생성")
+    @Operation(summary = "커스텀 동화 생성 후 각 페이지 생성")
     @PostMapping("/read")
     public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
-        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.createCustomTalePages(customTaleResponseDto);
+        List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePages(customTaleResponseDto);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
@@ -60,14 +60,14 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 저장")
     @PostMapping("/save")
-    public ResponseEntity<SuccessResponse> addCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleDetailDto customTaleDetailDto) {
+    public ResponseEntity<SuccessResponse> addCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleDetailRequestDto customTaleDetailRequestDto) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.addCustomTale(userId, customTaleDetailDto);
+        SuccessResponse successResponse = customTaleService.addCustomTale(userId, customTaleDetailRequestDto);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
 
-    @Operation(summary = "커스텀 동화 상세 조회")
+    @Operation(summary = "커스텀 동화 상세 조회 후 각 페이지 생성")
     @GetMapping("/{customTaleId}")
     public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
