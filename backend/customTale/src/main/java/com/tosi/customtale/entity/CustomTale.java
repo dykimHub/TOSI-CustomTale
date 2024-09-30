@@ -28,7 +28,7 @@ public class CustomTale {
     private Long childId;
     @Column(name = "title", nullable = false)
     private String title;
-    @Column(name = "image_s3_key", nullable = false, unique = true)
+    @Column(name = "image_s3_key", nullable = false)
     private String imageS3Key;
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;

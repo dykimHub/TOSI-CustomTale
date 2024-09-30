@@ -5,6 +5,8 @@ import com.tosi.customtale.common.exception.ExceptionCode;
 import com.tosi.customtale.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
 import com.tosi.customtale.entity.CustomTale;
+import com.tosi.customtale.entity.CustomTaleElement;
+import com.tosi.customtale.repository.CustomTaleElementRepository;
 import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import java.util.List;
 public class CustomTaleServiceImpl implements CustomTaleService {
     private final S3Service s3Service;
     private final CustomTaleRepository customTaleRepository;
+    private final CustomTaleElementRepository customTaleElementRepository;
     private final RestTemplate restTemplate;
     @Value("${service.user.url}")
     private String userURL;
@@ -56,6 +59,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     /**
      * DallE URL을 활용하여 이미지를 S3에 저장하고 S3 Key를 반환 받습니다.
      * 해당 S3 Key, 커스텀 동화 등을 활용하여 CustomTale 엔티티를 생성한 후 저장합니다.
+     * 커스텀 동화를 만들 때 사용한 키워드, 배경 등을 활용하여 CustomTaleElement을 생성한 후 저장합니다.
      *
      * @param userId                     회원 번호
      * @param customTaleDetailRequestDto 커스텀 동화 정보가 담긴 CustomTaleDetailRequestDto 객체
@@ -74,8 +78,18 @@ public class CustomTaleServiceImpl implements CustomTaleService {
                 customTaleDetailRequestDto.getCustomTale(),
                 customTaleDetailRequestDto.getIsPublic()
         );
-        customTaleRepository.save(customTale);
+        CustomTale savedCustomTale = customTaleRepository.save(customTale);
+        Long savedCustomTaleId = savedCustomTale.getCustomTaleId();
 
+        for (String keyword : customTaleDetailRequestDto.getKeyWord()) {
+            customTaleElementRepository.save(CustomTaleElement.of(
+                    savedCustomTaleId,
+                    customTaleDetailRequestDto.getChildId(),
+                    keyword,
+                    customTaleDetailRequestDto.getBackGround())
+            );
+
+        }
 
         return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
