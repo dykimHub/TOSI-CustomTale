@@ -2,7 +2,6 @@ package com.tosi.customtale.dto;
 
 import lombok.*;
 
-@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TalePageResponseDto {

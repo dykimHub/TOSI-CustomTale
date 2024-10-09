@@ -54,7 +54,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
         String customTale = processMultiChatRequest(chatMessages).get(1).getContent();
         String customImageURL = processImageRequest(customTale, customTaleRequestDto).getData().get(0).getUrl();
 
-        return CustomTaleResponseDto.ofDallE(customTale, customImageURL);
+        return CustomTaleResponseDto.of(customTale, customImageURL);
 
     }
 

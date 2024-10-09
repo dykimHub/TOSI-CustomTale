@@ -7,7 +7,6 @@ import lombok.ToString;
 
 import java.util.List;
 
-@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomTaleRequestDto {
