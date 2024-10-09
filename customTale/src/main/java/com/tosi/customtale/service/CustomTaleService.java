@@ -16,6 +16,8 @@ public interface CustomTaleService {
 
     List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId);
 
+    List<TalePageResponseDto> createPages(String customTale, String imageURL);
+
     SuccessResponse modifyCustomTalePublicStatus(PublicStatusRequestDto publicStatusRequestDto);
 
     SuccessResponse deleteCustomTale(Long customTaleId);

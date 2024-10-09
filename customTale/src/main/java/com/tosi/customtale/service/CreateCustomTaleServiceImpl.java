@@ -32,7 +32,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     private final ChatGptProperties chatGptProperties;
     private final DallEProperties dalleProperties;
     private final RestTemplate restTemplate;
-    private final S3Service s3Service;
+    private final CustomTaleService customTaleService;
     @Value("${openai.api-key}")
     private String apiKey;
 
@@ -66,29 +66,8 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
      * @return TalePageResponse 객체 리스트
      */
     @Override
-    public List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto) {
-        String[] lines = customTaleResponseDto.getCustomTale().split("\n");
-        String imageS3URL = customTaleResponseDto.getCustomImageDallEURL();
-
-        int pageNum = 1;
-        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
-
-        for (int i = 0; i < lines.length; i += 2) {
-            String line1 = lines[i];
-            // line1이 마지막 문장이면 다음 문장은 빈 문장
-            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
-
-            talePageResponseDtoList.add(
-                    TalePageResponseDto.builder()
-                            .leftNo(pageNum++)
-                            .left(imageS3URL)
-                            .rightNo(pageNum++)
-                            .right(line1 + "\n" + line2)
-                            .build()
-            );
-        }
-
-        return talePageResponseDtoList;
+    public List<TalePageResponseDto> createCustomTalePagesWithDallE(CustomTaleResponseDto customTaleResponseDto) {
+        return customTaleService.createPages(customTaleResponseDto.getCustomTale(), customTaleResponseDto.getCustomImageDallEURL());
     }
 
     /**

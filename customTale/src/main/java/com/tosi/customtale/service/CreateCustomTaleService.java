@@ -9,5 +9,5 @@ import java.util.List;
 public interface CreateCustomTaleService {
     CustomTaleResponseDto createCustomTale(Long userId, CustomTaleRequestDto customTaleRequestDto);
 
-    List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto);
+    List<TalePageResponseDto> createCustomTalePagesWithDallE(CustomTaleResponseDto customTaleResponseDto);
 }

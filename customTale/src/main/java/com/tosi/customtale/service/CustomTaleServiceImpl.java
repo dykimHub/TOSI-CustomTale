@@ -83,10 +83,11 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
         for (String keyword : customTaleDetailRequestDto.getKeyWord()) {
             customTaleElementRepository.save(CustomTaleElement.of(
-                    savedCustomTaleId,
-                    customTaleDetailRequestDto.getChildId(),
-                    keyword,
-                    customTaleDetailRequestDto.getBackGround())
+                            savedCustomTaleId,
+                            customTaleDetailRequestDto.getChildId(),
+                            keyword,
+                            customTaleDetailRequestDto.getBackGround()
+                    )
             );
 
         }
@@ -113,7 +114,41 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         if (!customTaleDetailResponseDto.getIsPublic() && !customTaleDetailResponseDto.getUserId().equals(userId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_PUBLIC);
 
-        return createCustomTalePages(CustomTaleResponseDto.ofS3(customTaleDetailResponseDto.getCustomTale(), customTaleDetailResponseDto.getCustomImageS3Key()));
+        String imageS3URL = s3Service.findS3URL(customTaleDetailResponseDto.getCustomImageS3Key());
+        return createPages(customTaleDetailResponseDto.getCustomTale(), imageS3URL);
+    }
+
+    /**
+     * 커스텀 동화 페이지를 생성합니다.
+     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
+     *
+     * @param customTale 커스텀 동화
+     * @param imageURL 이미지 주소
+     * @return TalePageResponse 객체 리스트
+     */
+    @Override
+    public List<TalePageResponseDto> createPages(String customTale, String imageURL) {
+        String[] lines = customTale.split("\n");
+
+        int pageNum = 1;
+        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
+
+        for (int i = 0; i < lines.length; i += 2) {
+            String line1 = lines[i];
+            // line1이 마지막 문장이면 다음 문장은 빈 문장
+            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
+
+            talePageResponseDtoList.add(
+                    TalePageResponseDto.builder()
+                            .leftNo(pageNum++)
+                            .left(imageURL)
+                            .rightNo(pageNum++)
+                            .right(line1 + "\n" + line2)
+                            .build()
+            );
+        }
+
+        return talePageResponseDtoList;
     }
 
     /**
@@ -146,38 +181,6 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         findCustomTaleDetailDto(customTaleId);
         customTaleRepository.deleteById(customTaleId);
         return SuccessResponse.of("해당 커스텀 동화가 성공적으로 삭제되었습니다.");
-    }
-
-    /**
-     * 커스텀 동화 페이지를 생성합니다.
-     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
-     *
-     * @param customTaleResponseDto 커스텀 동화 내용과 이미지 S3 Key가 담긴 객체
-     * @return TalePageResponse 객체 리스트
-     */
-    private List<TalePageResponseDto> createCustomTalePages(CustomTaleResponseDto customTaleResponseDto) {
-        String[] lines = customTaleResponseDto.getCustomTale().split("\n");
-        String imageS3URL = s3Service.findS3URL(customTaleResponseDto.getCustomImageS3Key());
-
-        int pageNum = 1;
-        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
-
-        for (int i = 0; i < lines.length; i += 2) {
-            String line1 = lines[i];
-            // line1이 마지막 문장이면 다음 문장은 빈 문장
-            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
-
-            talePageResponseDtoList.add(
-                    TalePageResponseDto.builder()
-                            .leftNo(pageNum++)
-                            .left(imageS3URL)
-                            .rightNo(pageNum++)
-                            .right(line1 + "\n" + line2)
-                            .build()
-            );
-        }
-
-        return talePageResponseDtoList;
     }
 
     /**

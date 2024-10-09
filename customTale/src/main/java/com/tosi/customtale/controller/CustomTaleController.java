@@ -35,7 +35,7 @@ public class CustomTaleController {
     @Operation(summary = "커스텀 동화 생성 후 각 페이지 생성")
     @PostMapping("/read")
     public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
-        List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePages(customTaleResponseDto);
+        List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePagesWithDallE(customTaleResponseDto);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
