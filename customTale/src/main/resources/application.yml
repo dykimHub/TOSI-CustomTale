@@ -45,8 +45,6 @@ cloud:
     credentials:
       access-key: ${ACCESS_KEY}
       secret-key: ${SECRET_KEY}
-server:
-  port: 8083
 service:
   user:
     url: ${USER_URL}
