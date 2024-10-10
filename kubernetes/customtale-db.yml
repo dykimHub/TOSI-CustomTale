@@ -38,6 +38,8 @@ spec:
               subPath: my.cnf
             - name: customtale-db-config # configmap에 정의해둔 init.sql 실행
               mountPath: /docker-entrypoint-initdb.d
+            - name: customtale-vol
+              mountPath: /var/lib/mysql
           envFrom:
             - secretRef: # mysql 인증정보
                 name: tosi-db-scrt
@@ -49,3 +51,6 @@ spec:
         - name: customtale-db-config
           configMap:
             name: customtale-db-config
+        - name: customtale-vol
+          persistentVolumeClaim:
+            claimName: customtale-pvc
