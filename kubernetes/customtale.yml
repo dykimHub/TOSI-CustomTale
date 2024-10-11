@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tosi-customtale-svc
+spec:
+  selector:
+    app: tosi-customtale
+    tier: backend
+  ports:
+    - port: 80 # 80으로 연결하면 http 기본 포트이기 때문에 포트 명시 필요없음
+      targetPort: 8080 # pod 달라서 다른 서비스와 포트번호 동일해도 됨
+  type: ClusterIP # ingress가 외부 명령을 받아서 전달
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tosi-customtale-dep
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tosi-customtale
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: tosi-customtale
+        tier: backend
+    spec:
+      containers:
+        - name: tosi-be-customtale
+          image: dyckerkim/tosi-be-customtale:latest # 재시작하면 최신 이미지 pull
+          envFrom:
+            - secretRef: # mysql, s3, openai 인증
+                name: tosi-customtale-scrt
+          env:
+            - name: MYSQL_URL
+              value: tosi-db-customtale-svc.default
+            - name: REDIS_URL
+              value: tosi-cc-svc.default
+            - name: USER_URL
+              value: http://tosi-user-svc.default/api/users
