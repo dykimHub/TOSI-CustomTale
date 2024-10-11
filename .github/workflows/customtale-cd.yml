@@ -50,6 +50,6 @@ jobs:
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ap-northeast-2 --name TOSI
 
-      # chat pod을 재시작하여 최신 이미지 pull
+      # customtale pod을 재시작하여 최신 이미지 pull
       - name: Deploy
         run: kubectl rollout restart deployment/tosi-customtale-dep
