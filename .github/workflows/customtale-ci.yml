@@ -38,5 +38,4 @@ jobs:
           API_KEY: ${{secrets.OPENAI_KEY}}
           MYSQL_URL: 127.0.0.1
           REDIS_URL: localhost
-          TALE_URL: http://localhost:8080/api/tales
-          JWT_SECRET: jwtsecretfortest
+          USER_URL: http://localhost:8080/api/users
