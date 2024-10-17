@@ -155,15 +155,15 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 공개 여부 수정에 성공하면 SuccessResponse를 반환합니다.
      * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에서 삭제합니다.
      *
-     * @param publicStatusRequestDto 커스텀 동화 번호와 공개 여부가 담긴 PublicStatusRequestDto 객체
+     * @param customTaleId 커스텀 동화 번호와 공개 여부가 담긴 PublicStatusRequestDto 객체
      * @return SuccessResponse 객체
      */
-    @CacheEvict(value = "customTaleDetail", key = "#publicStatusRequestDto.customTaleId")
+    @CacheEvict(value = "customTaleDetail", key = "#customTaleId")
     @Transactional
     @Override
-    public SuccessResponse modifyCustomTalePublicStatus(PublicStatusRequestDto publicStatusRequestDto) {
-        findCustomTaleDetailDto(publicStatusRequestDto.getCustomTaleId());
-        customTaleRepository.modifyCustomTalePublicStatus(publicStatusRequestDto.getCustomTaleId(), publicStatusRequestDto.getIsPublic());
+    public SuccessResponse modifyCustomTalePublicStatus(Long customTaleId) {
+        findCustomTaleDetailDto(customTaleId);
+        customTaleRepository.modifyCustomTalePublicStatus(customTaleId);
         return SuccessResponse.of("커스텀 동화 공개 여부가 성공적으로 수정되었습니다.");
     }
 
