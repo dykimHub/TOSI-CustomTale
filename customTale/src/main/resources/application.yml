@@ -52,4 +52,4 @@ openai:
   api-key: ${API_KEY}
 springdoc:
   api-docs:
-    path: /docs/custom-tales/v3/api-docs
+    path: /docs/custom-tales
