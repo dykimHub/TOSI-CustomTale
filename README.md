@@ -1,6 +1,6 @@
 # :art: TOSI-CustomTale
 
-**TOSI 서비스**에서 커스텀 동화와 관련된 기능을 **커스텀 동화 서비스**로 분리한 프로젝트 입니다.  
+**토씨 TOSI(The Only Story In the world) 서비스**에서 커스텀 동화와 관련된 기능을 **커스텀 동화 서비스**로 분리한 프로젝트 입니다.  
 [TOSI 프로젝트](https://github.com/dykimHub/TOSI)에서 전체 구조를 확인하실 수 있습니다.
 
 ## 📅 마이그레이션 & 리팩토링 개요
@@ -40,6 +40,8 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
 모든 API는 **Access Token**을 획득하신 후 사용할 수 있습니다.
 
 1. **회원 API 문서**에 접속하여 **로그인 API**를 실행합니다:
+
+   - **회원 API 문서 주소** 🔗 [https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%ED%9A%8C%EC%9B%90](https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%ED%9A%8C%EC%9B%90)
 
 2. 로그인 API 요청 본문에 아래 정보를 입력하세요:
    ```json
