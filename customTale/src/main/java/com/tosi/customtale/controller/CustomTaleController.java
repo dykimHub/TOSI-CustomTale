@@ -93,36 +93,27 @@ public class CustomTaleController {
                 .body(successResponse);
     }
 
-    @Operation(summary = "커스텀 동화 상세 조회 후 책으로 읽기",
-            parameters = {
-                    @Parameter(name = "customTaleId", example = "3")
-            })
+    @Operation(summary = "커스텀 동화 상세 조회 후 책으로 읽기")
     @GetMapping("/{customTaleId}")
-    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
+    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @Parameter(example = "3") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
         List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
 
-    @Operation(summary = "커스텀 동화 공개 여부 수정",
-            parameters = {
-                    @Parameter(name = "customTaleId", example = "2")
-            })
+    @Operation(summary = "커스텀 동화 공개 여부 수정")
     @PutMapping("/{customTaleId}")
-    public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
+    public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
         SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
 
-    @Operation(summary = "내가 만든 동화 삭제",
-            parameters = {
-                    @Parameter(name = "customTaleId", example = "2")
-            })
+    @Operation(summary = "내가 만든 동화 삭제")
     @DeleteMapping("/{customTaleId}")
-    public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
+    public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
         SuccessResponse successResponse = customTaleService.deleteCustomTale(customTaleId);
         return ResponseEntity.ok()
