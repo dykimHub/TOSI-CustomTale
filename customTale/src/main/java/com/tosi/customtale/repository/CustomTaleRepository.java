@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 public interface CustomTaleRepository extends JpaRepository<CustomTale, Long>, CustomTaleRepositoryCustom {
 
     @Modifying
-    @Query("UPDATE CustomTale c SET c.isPublic = :isPublic WHERE c.customTaleId = :customTaleId")
-    int modifyCustomTalePublicStatus(Long customTaleId, Boolean isPublic);
+    @Query("UPDATE CustomTale c SET c.isPublic = CASE WHEN c.isPublic = true THEN false ELSE true END WHERE c.customTaleId = :customTaleId")
+    int modifyCustomTalePublicStatus(Long customTaleId);
 
 }
