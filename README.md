@@ -35,9 +35,9 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
 
 - **커스텀 동화 API 문서 주소**: 🔗 [https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%EC%BB%A4%EC%8A%A4%ED%85%80%20%EB%8F%99%ED%99%94](https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%EC%BB%A4%EC%8A%A4%ED%85%80%20%EB%8F%99%ED%99%94)
 
-#### 🔐 API 사용 방법
+#### 🔐 사용자 인증이 필요한 API 사용 방법
 
-모든 API는 **Access Token**을 획득하신 후 사용할 수 있습니다.
+일부 API는 인증 헤더가 필요합니다. 먼저 **Access Token**을 획득하셔야 합니다.
 
 1. **회원 API 문서**에 접속하여 **로그인 API**를 실행합니다:
 
@@ -50,9 +50,8 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
      "password": "test"
    }
    ```
-3. 우측 상단 Authorize 버튼을 클릭하고 발급받은 토큰을 입력한 후 Authorize 버튼을 클릭합니다.
-4. Try it out 버튼을 클릭하고 요청 변수를 입력한 후 Execute 버튼을 클릭합니다.  
-   4-1. Authorization Header를 필요로 하는 API에는 `Bearer {발급받은 토큰}`을 한번 더 입력합니다.
+3. 테스트할 API의 우측 좌물쇠를 클릭한 후 발급받은 토큰을 입력하고 Authorize 버튼을 클릭합니다.
+4. Try it out 버튼을 클릭하고 Authorization Header 칸에 `Bearer {발급받은 토큰}`을 한번 더 입력한 후 Execute 버튼을 클릭합니다.
 
 #### :sparkles: 커스텀 동화 생성 방법
 
@@ -60,4 +59,4 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
 
 2. 요청 객체에 이름, 성별(남자: 0, 여자: 1), 원하는 배경, 키워드를 입력하고 API를 실행합니다.
 
-3. OpenAI가 만든 커스텀 동화와 삽화를 확인할 수 있습니다. 삽화를 보려면 제공된 URL을 주소창에 입력해주세요.
+3. OpenAI가 만든 커스텀 동화와 삽화를 확인할 수 있습니다. 삽화를 보려면 제공된 URL을 주소창에 입력해 주세요.
