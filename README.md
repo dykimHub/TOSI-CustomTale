@@ -9,6 +9,7 @@
 
 커스텀 동화 서비스를 분리하면서 전반적인 코드 재사용성과 로직을 개선하였습니다.  
 QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하였습니다.  
+동화, 이미지 생성 프롬프트를 테스트하면서 더 나은 작품을 생성하도록 바꾸었습니다.  
 쿠버네티스를 도입하여 오케스트레이션을 개선하였습니다.
 
 ## :computer: 기술 스택
@@ -24,6 +25,8 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
 ![Redis](https://img.shields.io/badge/Redis-%23DC382D.svg?style=for-the-badge&logo=redis&logoColor=white)
 ![AWS S3](https://img.shields.io/badge/AWS%20S3-%23FF9900.svg?style=for-the-badge&logo=amazons3&logoColor=white)
 
+![OpenAI](https://img.shields.io/badge/OpenAI-%23000000.svg?style=for-the-badge&logo=OpenAI&logoColor=white)
+
 ![Docker](https://img.shields.io/badge/Docker-%232496ED.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/kubernetes-%23326CE5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![EKS](https://img.shields.io/badge/AWS%20EKS-%23FF9900.svg?style=for-the-badge&logo=amazoneks&logoColor=white)
@@ -31,7 +34,7 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
 
 ## 📖 API 문서
 
-프로젝트의 API는 **Swagger UI**를 통해 쉽게 확인하고 테스트할 수 있습니다.
+커스텀 동화 서비스의 API는 **Swagger UI**를 통해 쉽게 확인하고 테스트할 수 있습니다.
 
 - **커스텀 동화 API 문서 주소**: 🔗 [https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%EC%BB%A4%EC%8A%A4%ED%85%80%20%EB%8F%99%ED%99%94](https://www.tosi.world/swagger-ui/index.html?urls.primaryName=%EC%BB%A4%EC%8A%A4%ED%85%80%20%EB%8F%99%ED%99%94)
 
@@ -50,12 +53,13 @@ QueryDSL 및 DTO Projection, 캐싱을 추가하여 조회 성능을 개선하�
      "password": "test"
    }
    ```
-3. 테스트할 API의 우측 좌물쇠를 클릭한 후 발급받은 토큰을 입력하고 Authorize 버튼을 클릭합니다.
-4. Try it out 버튼을 클릭하고 Authorization Header 칸에 `Bearer {발급받은 토큰}`을 한번 더 입력한 후 Execute 버튼을 클릭합니다.
+3. 발급된 Access Token을 복사합니다.
+4. 테스트할 API의 우측 좌물쇠를 클릭한 후 복사한 토큰을 붙여 넣고 Authorize 버튼을 클릭합니다.
+5. Try it out 버튼을 클릭하고 Authorization Header 칸에 `Bearer {발급받은 토큰}`을 입력한 후 Execute 버튼을 클릭합니다.
 
 #### :sparkles: 커스텀 동화 생성 방법
 
-1. 커스텀 동화 생성 요청 API에 `Bearer {발급받은 토큰}`을 입력하여 인증을 완료합니다.
+1. 커스텀 동화 생성 API를 클릭한 후 인증을 완료합니다.
 
 2. 요청 객체에 이름, 성별(남자: 0, 여자: 1), 원하는 배경, 키워드를 입력하고 API를 실행합니다.
 
