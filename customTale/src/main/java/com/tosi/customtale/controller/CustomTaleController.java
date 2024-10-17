@@ -5,11 +5,13 @@ import com.tosi.customtale.dto.*;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,13 @@ public class CustomTaleController {
     private final CreateCustomTaleService createCustomTaleService;
 
     @Operation(summary = "커스텀 동화 생성 요청")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            value = ExampleObject.customRequest
+                    )
+            )
+    )
     @PostMapping
     public ResponseEntity<CustomTaleResponseDto> createCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleRequestDto customTaleRequestDto) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
@@ -32,7 +41,14 @@ public class CustomTaleController {
                 .body(customTaleResponseDto);
     }
 
-    @Operation(summary = "커스텀 동화 생성 후 각 페이지 생성")
+    @Operation(summary = "커스텀 동화 생성 후 책으로 읽기")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            value = ExampleObject.customResponse
+                    )
+            )
+    )
     @PostMapping("/read")
     public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
         List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePagesWithDallE(customTaleResponseDto);
@@ -42,9 +58,11 @@ public class CustomTaleController {
 
     @Operation(summary = "내가 만든 동화 목록")
     @GetMapping
-    public ResponseEntity<List<CustomTaleDto>> findCustomTales(@RequestHeader("Authorization") String accessToken,
-                                                               @PageableDefault(size = 9, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable) {
+    public ResponseEntity<List<CustomTaleDto>> findCustomTales(
+            @RequestHeader("Authorization") String accessToken,
+            @RequestParam(defaultValue = "0") int page) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
+        Pageable pageable = PageRequest.of(page, 9, Sort.by(Sort.Direction.DESC, "regDate"));
         List<CustomTaleDto> customTaleDtoList = customTaleService.findCustomTaleList(userId, pageable);
         return ResponseEntity.ok()
                 .body(customTaleDtoList);
@@ -52,13 +70,21 @@ public class CustomTaleController {
 
     @Operation(summary = "공개중인 커스텀 동화 목록")
     @GetMapping("/public")
-    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@PageableDefault(size = 9, sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable) {
+    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@RequestParam(defaultValue = "0") int page) {
+        Pageable pageable = PageRequest.of(page, 9, Sort.by(Sort.Direction.DESC, "regDate"));
         List<CustomTaleDto> customTaleDtoList = customTaleService.findPublicCustomTaleList(pageable);
         return ResponseEntity.ok()
                 .body(customTaleDtoList);
     }
 
     @Operation(summary = "커스텀 동화 저장")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                            value = ExampleObject.customSaveRequest
+                    )
+            )
+    )
     @PostMapping("/save")
     public ResponseEntity<SuccessResponse> addCustomTale(@RequestHeader("Authorization") String accessToken, @RequestBody CustomTaleDetailRequestDto customTaleDetailRequestDto) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
@@ -67,7 +93,10 @@ public class CustomTaleController {
                 .body(successResponse);
     }
 
-    @Operation(summary = "커스텀 동화 상세 조회 후 각 페이지 생성")
+    @Operation(summary = "커스텀 동화 상세 조회 후 책으로 읽기",
+            parameters = {
+                    @Parameter(name = "customTaleId", example = "3")
+            })
     @GetMapping("/{customTaleId}")
     public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
@@ -76,16 +105,22 @@ public class CustomTaleController {
                 .body(talePageResponseDtoList);
     }
 
-    @Operation(summary = "커스텀 동화 공개 여부 수정")
-    @PutMapping
-    public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @RequestBody PublicStatusRequestDto publicStatusRequestDto) {
+    @Operation(summary = "커스텀 동화 공개 여부 수정",
+            parameters = {
+                    @Parameter(name = "customTaleId", example = "2")
+            })
+    @PutMapping("/{customTaleId}")
+    public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(publicStatusRequestDto);
+        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
 
-    @Operation(summary = "내가 만든 동화 삭제")
+    @Operation(summary = "내가 만든 동화 삭제",
+            parameters = {
+                    @Parameter(name = "customTaleId", example = "2")
+            })
     @DeleteMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
