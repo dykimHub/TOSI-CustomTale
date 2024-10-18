@@ -3,7 +3,7 @@ name: CUSTOM-TALE CD
 # release로 시작하는 브랜치에 push될 때
 on:
   push:
-    branches: ["feature/deploy/customTale-*"]
+    branches: ["feature/deploy/customTale"]
 
 # 깃헙 토큰 권한 생성
 permissions:
