@@ -1,6 +1,6 @@
 package com.tosi.customtale.service;
 
-import com.tosi.customtale.common.exception.SuccessResponse;
+import com.tosi.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
 import org.springframework.data.domain.Pageable;
 

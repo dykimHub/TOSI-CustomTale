@@ -1,8 +1,8 @@
 package com.tosi.customtale.service;
 
-import com.tosi.customtale.common.exception.CustomException;
+import com.tosi.common.exception.CustomException;
+import com.tosi.common.exception.SuccessResponse;
 import com.tosi.customtale.common.exception.ExceptionCode;
-import com.tosi.customtale.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.entity.CustomTaleElement;

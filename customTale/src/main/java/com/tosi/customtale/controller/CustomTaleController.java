@@ -1,6 +1,6 @@
 package com.tosi.customtale.controller;
 
-import com.tosi.customtale.common.exception.SuccessResponse;
+import com.tosi.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;

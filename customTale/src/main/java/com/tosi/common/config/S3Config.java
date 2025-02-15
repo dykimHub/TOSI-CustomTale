@@ -1,4 +1,4 @@
-package com.tosi.customtale.common.config;
+package com.tosi.common.config;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;

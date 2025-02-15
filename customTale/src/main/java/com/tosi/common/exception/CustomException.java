@@ -1,5 +1,6 @@
-package com.tosi.customtale.common.exception;
+package com.tosi.common.exception;
 
+import com.tosi.customtale.common.exception.ExceptionCode;
 import lombok.Getter;
 
 @Getter

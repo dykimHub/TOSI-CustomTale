@@ -1,4 +1,4 @@
-package com.tosi.customtale.common.config;
+package com.tosi.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
