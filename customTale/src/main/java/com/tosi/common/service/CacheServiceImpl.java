@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -25,12 +26,13 @@ public class CacheServiceImpl implements CacheService {
      * @param key  조회할 캐시 키
      * @param type 반환할 객체의 클래스 타입
      * @param <T>  반환할 객체의 타입 (메서드 호출 시 Class<T>에 따라 결정됨)
-     * @return 캐싱된 데이터가 존재하면 변환하여 반환하고, 없으면 null 반환
+     * @return 캐싱된 데이터가 존재하면 변환하여 반환하고, 없으면 Optional.empty() 반환
      */
     @Override
-    public <T> T getCache(String key, Class<T> type) {
+    public <T> Optional<T> getCache(String key, Class<T> type) {
         Object cachedDto = redisTemplate.opsForValue().get(key);
-        return type.cast(cachedDto);
+        log.info("Cache Hit: {}", key);
+        return Optional.ofNullable(type.cast(cachedDto));
     }
 
     /**
@@ -44,6 +46,7 @@ public class CacheServiceImpl implements CacheService {
     @Override
     public <T> List<T> getMultiCaches(List<String> keys, Class<T> type) {
         List<Object> cachedDtos = redisTemplate.opsForValue().multiGet(keys);
+        log.info("Cache Hit: {}", keys);
         return cachedDtos.stream()
                 .filter(Objects::nonNull)
                 .map(type::cast)
@@ -66,6 +69,7 @@ public class CacheServiceImpl implements CacheService {
          * redisTemplate이 사용하는 Object 타입으로 저장됩니다.
          */
         redisTemplate.opsForValue().set(key, value, timeout, unit);
+        log.info("Cache Set: {}", key);
     }
 
     /**
@@ -78,6 +82,7 @@ public class CacheServiceImpl implements CacheService {
     @Override
     public <T> void setMultiCaches(Map<String, T> cacheMap, long timeout, TimeUnit unit) {
         redisTemplate.opsForValue().multiSet(cacheMap);
+        log.info("Cache Set: {}", cacheMap.keySet());
 
         /**
          * MSET 명령은 만료 시간 설정 기능이 없습니다.
@@ -103,7 +108,7 @@ public class CacheServiceImpl implements CacheService {
      * 캐시 저장에 활용되는 Map을 생성합니다.
      *
      * @param dtoMap key: 객체 id, value: 객체
-     * @param <T>  제네릭(메서드 호출된 순간 타입 결정)
+     * @param <T>    제네릭(메서드 호출된 순간 타입 결정)
      * @return Map - key: 캐시 key, value: 객체
      */
     @Override

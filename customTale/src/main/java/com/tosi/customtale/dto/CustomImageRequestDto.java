@@ -21,10 +21,24 @@ public class CustomImageRequestDto {
         this.n = n;
         this.prompt = """
                 %s
-                1. 이 동화의 표지로 쓸 그림을 그려줘.
-                2. 디즈니 스타일로 3D로 생동감 있게 그려줘.
-                3. 배경은 %s, 참고해.
-                4. %s 아이를 포함시켜줘.
+                
+                Please create an illustration to be used as the cover for this fairy tale. \s
+                Make it look like a scene from a Pixar/Disney animated movie with high-quality 3D rendering. \s
+                Refer to the styles of the movies Tangled, Frozen. \s
+
+                Set the background to %s. \s
+                Draw a %s character in a 3D modeling style with realistic textures and lighting. \s
+
+                🎨 Style Details: \s
+                - The character should have a rounded face, large expressive eyes, and detailed, voluminous hair like Disney animation. \s
+                - Skin should look smooth and soft with realistic shading and highlights. \s
+                - Lighting should be cinematic and natural, with a soft glow to enhance the depth. \s
+                - The overall color palette should be warm, vibrant, and lively to match the Disney/Pixar aesthetic. \s
+
+                🚫 Do NOT include any text under any circumstances. \s
+                🚫 Avoid storybook, watercolor, or flat illustration styles. \s
+                🚫 Must be fully 3D animated-style, not 2D or stylized illustration. \s
+                                               
                 """.formatted(customTale,
                 customTaleRequestDto.getBackGround(),
                 customTaleRequestDto.getChildGender() == 0 ? "남자" : "여자"

@@ -17,7 +17,8 @@ public enum CachePrefix {
     FAVORITE_TALE("favoriteTaleIdCache::"),
 
     // 커스텀 동화 서비스
-    CUSTOM_TALE("customTaleCache::");
+    CUSTOM_TALE("customTaleCache::"),
+    CUSTOM_TALE_DETAIL("customTaleDetailCache::");
 
 
     private final String prefix;

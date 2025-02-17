@@ -19,8 +19,6 @@ import com.tosi.customtale.repository.CustomTaleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -50,7 +48,6 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * @param userId   로그인한 회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
      * @return CustomTaleDto 객체 리스트
-     * @throws CustomException DB에서 커스텀 동화 목록을 찾을 수 없으면 예외 처리
      */
     @Override
     public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
@@ -108,7 +105,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 커스텀 동화 객체 리스트를 Map으로 변환하여 반환합니다.
      *
      * @param customTaleDtoList 커스텀 동화 객체 리스트
-     * @param s3UrlExists 객체에 S3 URL이 존재하는지 여부
+     * @param s3UrlExists       객체에 S3 URL이 존재하는지 여부
      * @return key: 커스텀 동화 객체 Id, value: 커스텀 동화 객체
      */
     private Map<Long, CustomTaleDto> createCustomTaleDtoMap(List<CustomTaleDto> customTaleDtoList, boolean s3UrlExists) {
@@ -122,9 +119,10 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     /**
      * 캐시에 없는 커스텀 동화를 DB에서 조회하여 반환합니다.
      *
-     * @param customTaleIds 커스텀 동화 객체 Id 목록
+     * @param customTaleIds          커스텀 동화 객체 Id 목록
      * @param cachedCustomTaleDtoMap 캐싱된 커스텀 동화 객체 Map
      * @return 커스텀 동화 객체 리스트
+     * @throws CustomException DB에서 커스텀 동화 목록을 찾을 수 없으면 예외 처리
      */
     private List<CustomTaleDto> findMissingCustomTaleList(List<Long> customTaleIds, Map<Long, CustomTaleDto> cachedCustomTaleDtoMap) {
         // Map에 없는 id 필터링
@@ -144,7 +142,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * DallE URL을 활용하여 이미지를 S3에 저장하고 S3 Key를 반환 받습니다.
      * 해당 S3 Key, 커스텀 동화 등을 활용하여 CustomTale 엔티티를 생성한 후 저장합니다.
      * 커스텀 동화를 만들 때 사용한 키워드, 배경 등을 활용하여 CustomTaleElement을 생성한 후 저장합니다.
-     * 최신 등록된 커스텀 동화 객체를 1시간 동안 캐싱하여 공개중인 동화 목록에서 초기 트래픽 급증 처리
+     * 최신 등록된 커스텀 동화 개요 및 상세 객체를 1시간 동안 캐싱하여 공개중인 동화 목록에서 초기 트래픽 급증 처리
      *
      * @param userId                     회원 번호
      * @param customTaleDetailRequestDto 커스텀 동화 정보가 담긴 CustomTaleDetailRequestDto 객체
@@ -182,23 +180,30 @@ public class CustomTaleServiceImpl implements CustomTaleService {
                 CustomTaleDto.of(savedCustomTaleId, savedCustomTale.getTitle(), s3Service.findS3URL(savedCustomTale.getImageS3Key()), savedCustomTale.getIsPublic()),
                 1, TimeUnit.HOURS);
 
+        cacheService.setCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(savedCustomTaleId),
+                CustomTaleDetailResponseDto.of(savedCustomTale, s3Service.findS3URL(savedCustomTale.getImageS3Key())),
+                1, TimeUnit.HOURS);
+
         return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
 
     /**
-     * 커스텀 동화 상세 내용을 조회한 후, 비공개 커스텀 동화인 경우 본인 확인을 합니다.
+     * 커스텀 동화 상세 내용을 페이지 객체로 반환합니다.
+     * 캐시에서 먼저 조회하고 없으면 DB에서 찾습니다.
+     * 비공개 커스텀 동화인 경우 본인 확인을 합니다.
      * 커스텀 동화 내용과 이미지 주소로 CustomTaleDetailResponseDto 객체를 생성한 후 커스텀 동화 페이지 리스트를 요청합니다.
-     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에 등록합니다.
      *
      * @param userId       회원 번호
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
      * @throws CustomException 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
      */
-    @Cacheable(value = "customTaleDetail", key = "#customTaleId")
     @Override
     public List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId) {
-        CustomTaleDetailResponseDto customTaleDetailResponseDto = findCustomTaleDetailDto(customTaleId);
+        CustomTaleDetailResponseDto customTaleDetailResponseDto = cacheService.getCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId), CustomTaleDetailResponseDto.class)
+                .or(() -> customTaleRepository.findCustomTaleDetail(customTaleId)
+                        .map(c -> c.toWithoutS3Key(s3Service.findS3URL(c.getCustomImageS3Key()))))
+                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
 
         // 커스텀 동화 공개 여부가 false인데, 로그인한 회원 번호와 커스텀 동화를 생성한 회원의 번호가 일치하지 않는 경우
         if (!customTaleDetailResponseDto.getIsPublic() && !customTaleDetailResponseDto.getUserId().equals(userId))
@@ -243,46 +248,38 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
     /**
      * 공개 여부 수정에 성공하면 SuccessResponse를 반환합니다.
-     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에서 삭제합니다.
+     * 커스텀 동화 상세 객체를 캐시에서 삭제합니다.
      *
      * @param customTaleId 커스텀 동화 번호와 공개 여부가 담긴 PublicStatusRequestDto 객체
      * @return SuccessResponse 객체
      */
-    @CacheEvict(value = "customTaleDetail", key = "#customTaleId")
     @Transactional
     @Override
     public SuccessResponse modifyCustomTalePublicStatus(Long customTaleId) {
-        findCustomTaleDetailDto(customTaleId);
+        if (!customTaleRepository.existsById(customTaleId))
+            throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND);
+
+        cacheService.deleteCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId));
         customTaleRepository.modifyCustomTalePublicStatus(customTaleId);
         return SuccessResponse.of("커스텀 동화 공개 여부가 성공적으로 수정되었습니다.");
     }
 
     /**
      * 해당 커스텀 동화를 삭제합니다.
-     * 커스텀 동화 상세 페이지 리스트(#커스텀 동화 번호)를 캐시에서 삭제합니다.
+     * 커스텀 동화 상세 객체를 캐시에서 삭제합니다.
      *
      * @param customTaleId 커스텀 동화 번호
      * @return 커스텀 동화가 삭제되면 SuccessResponse를 반환합니다.
      */
-    @CacheEvict(value = "customTaleDetail", key = "#customTaleId")
     @Transactional
     @Override
     public SuccessResponse deleteCustomTale(Long customTaleId) {
-        findCustomTaleDetailDto(customTaleId);
+        if (!customTaleRepository.existsById(customTaleId))
+            throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND);
+
+        cacheService.deleteCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId));
         customTaleRepository.deleteById(customTaleId);
         return SuccessResponse.of("해당 커스텀 동화가 성공적으로 삭제되었습니다.");
-    }
-
-    /**
-     * 커스텀 동화 번호로 커스텀 동화 상세 정보(내용 포함)를 조회합니다.
-     *
-     * @param customTaleId 커스텀 동화 번호
-     * @return CustomTaleDetailDto 객체
-     * @throws CustomException 커스텀 동화가 존재하지 않으면 예외 처리
-     */
-    private CustomTaleDetailResponseDto findCustomTaleDetailDto(Long customTaleId) {
-        return customTaleRepository.findCustomTaleDetail(customTaleId)
-                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
     }
 
     /**

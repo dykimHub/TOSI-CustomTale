@@ -4,10 +4,11 @@ import com.tosi.common.constants.CachePrefix;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public interface CacheService {
-    <T> T getCache(String key, Class<T> type);
+    <T> Optional<T> getCache(String key, Class<T> type);
 
     <T> List<T> getMultiCaches(List<String> keys, Class<T> type);
 
