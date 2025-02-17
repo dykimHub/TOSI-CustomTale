@@ -1,10 +1,16 @@
-package com.tosi.customtale.dto;
+package com.tosi.common.dto;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TalePageResponseDto {
+public class TalePageDto {
     private int leftNo;
     private String left;
     private int rightNo;
@@ -12,7 +18,7 @@ public class TalePageResponseDto {
     private boolean flipped;
 
     @Builder
-    public TalePageResponseDto(int leftNo, String left, int rightNo, String right, boolean flipped) {
+    public TalePageDto(int leftNo, String left, int rightNo, String right, boolean flipped) {
         this.leftNo = leftNo;
         this.left = left;
         this.rightNo = rightNo;

@@ -7,7 +7,6 @@ import com.tosi.customtale.common.config.DallEProperties;
 import com.tosi.customtale.dto.CustomImageRequestDto;
 import com.tosi.customtale.dto.CustomTaleRequestDto;
 import com.tosi.customtale.dto.CustomTaleResponseDto;
-import com.tosi.customtale.dto.TalePageResponseDto;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatRequest;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatResponse;
@@ -32,7 +31,6 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     private final ChatGptProperties chatGptProperties;
     private final DallEProperties dalleProperties;
     private final ApiClient apiClient;
-    private final CustomTaleService customTaleService;
     @Value("${openai.api-key}")
     private String apiKey;
 
@@ -59,18 +57,6 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     }
 
     /**
-     * 커스텀 동화 페이지를 생성합니다.
-     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
-     *
-     * @param customTaleResponseDto 커스텀 동화 내용과 DallE 이미지 URL이 담긴 객체
-     * @return TalePageResponse 객체 리스트
-     */
-    @Override
-    public List<TalePageResponseDto> createCustomTalePagesWithDallE(CustomTaleResponseDto customTaleResponseDto) {
-        return customTaleService.createPages(customTaleResponseDto.getCustomTale(), customTaleResponseDto.getCustomImageDallEURL());
-    }
-
-    /**
      * 커스텀 동화 생성 과정을 처리합니다.
      *
      * @param userId       회원 번호
@@ -90,7 +76,7 @@ public class CreateCustomTaleServiceImpl implements CreateCustomTaleService {
     /**
      * 커스텀 이미지 생성 과정을 처리합니다.
      *
-     * @param userId
+     * @param userId               회원 번호
      * @param customTale           생성된 커스텀 동화
      * @param customTaleRequestDto 사용자 정보
      * @return 커스텀 이미지 주소를 담은 ImageResponse 객체

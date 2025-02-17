@@ -1,10 +1,11 @@
 package com.tosi.customtale.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.querydsl.core.annotations.QueryProjection;
 import com.tosi.customtale.entity.CustomTale;
 import lombok.*;
 
-@With
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomTaleDetailResponseDto {

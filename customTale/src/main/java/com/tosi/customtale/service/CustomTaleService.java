@@ -1,5 +1,6 @@
 package com.tosi.customtale.service;
 
+import com.tosi.common.dto.TalePageDto;
 import com.tosi.common.exception.SuccessResponse;
 import com.tosi.customtale.dto.*;
 import org.springframework.data.domain.Pageable;
@@ -14,9 +15,7 @@ public interface CustomTaleService {
 
     SuccessResponse addCustomTale(Long userId, CustomTaleDetailRequestDto customTaleDetailRequestDto);
 
-    List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId);
-
-    List<TalePageResponseDto> createPages(String customTale, String imageURL);
+    List<TalePageDto> findCustomTaleDetail(Long userId, Long customTaleId);
 
     SuccessResponse modifyCustomTalePublicStatus(Long customTaleId);
 

@@ -1,17 +1,17 @@
 package com.tosi.customtale.service;
 
 import com.tosi.common.client.ApiClient;
+import com.tosi.common.client.ApiUtils;
 import com.tosi.common.constants.ApiPaths;
 import com.tosi.common.constants.CachePrefix;
+import com.tosi.common.dto.TalePageDto;
 import com.tosi.common.exception.CustomException;
 import com.tosi.common.exception.SuccessResponse;
 import com.tosi.common.service.CacheService;
-import com.tosi.common.service.S3Service;
 import com.tosi.customtale.common.exception.ExceptionCode;
 import com.tosi.customtale.dto.CustomTaleDetailRequestDto;
 import com.tosi.customtale.dto.CustomTaleDetailResponseDto;
 import com.tosi.customtale.dto.CustomTaleDto;
-import com.tosi.customtale.dto.TalePageResponseDto;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.entity.CustomTaleElement;
 import com.tosi.customtale.repository.CustomTaleElementRepository;
@@ -23,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -151,7 +150,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     @Transactional
     @Override
     public SuccessResponse addCustomTale(Long userId, CustomTaleDetailRequestDto customTaleDetailRequestDto) {
-        String customImageS3Key = s3Service.addCustomImageToS3(customTaleDetailRequestDto.getCustomImageDallEURL(), userId);
+        String customImageS3Key = s3Service.uploadImage(customTaleDetailRequestDto.getCustomImageDallEURL(), userId);
 
         CustomTale customTale = CustomTale.of(
                 userId,
@@ -199,51 +198,16 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * @throws CustomException 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
      */
     @Override
-    public List<TalePageResponseDto> findCustomTaleDetail(Long userId, Long customTaleId) {
+    public List<TalePageDto> findCustomTaleDetail(Long userId, Long customTaleId) {
         CustomTaleDetailResponseDto customTaleDetailResponseDto = cacheService.getCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId), CustomTaleDetailResponseDto.class)
-                .or(() -> customTaleRepository.findCustomTaleDetail(customTaleId)
-                        .map(c -> c.toWithoutS3Key(s3Service.findS3URL(c.getCustomImageS3Key()))))
+                .or(() -> customTaleRepository.findCustomTaleDetail(customTaleId).map(c -> c.toWithoutS3Key(s3Service.findS3URL(c.getCustomImageS3Key()))))
                 .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
 
         // 커스텀 동화 공개 여부가 false인데, 로그인한 회원 번호와 커스텀 동화를 생성한 회원의 번호가 일치하지 않는 경우
         if (!customTaleDetailResponseDto.getIsPublic() && !customTaleDetailResponseDto.getUserId().equals(userId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_PUBLIC);
 
-        String imageS3URL = s3Service.findS3URL(customTaleDetailResponseDto.getCustomImageS3Key());
-        return createPages(customTaleDetailResponseDto.getCustomTale(), imageS3URL);
-    }
-
-    /**
-     * 커스텀 동화 페이지를 생성합니다.
-     * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
-     *
-     * @param customTale 커스텀 동화
-     * @param imageURL   이미지 주소
-     * @return TalePageResponse 객체 리스트
-     */
-    @Override
-    public List<TalePageResponseDto> createPages(String customTale, String imageURL) {
-        String[] lines = customTale.split("\n");
-
-        int pageNum = 1;
-        List<TalePageResponseDto> talePageResponseDtoList = new ArrayList<>();
-
-        for (int i = 0; i < lines.length; i += 2) {
-            String line1 = lines[i];
-            // line1이 마지막 문장이면 다음 문장은 빈 문장
-            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
-
-            talePageResponseDtoList.add(
-                    TalePageResponseDto.builder()
-                            .leftNo(pageNum++)
-                            .left(imageURL)
-                            .rightNo(pageNum++)
-                            .right(line1 + "\n" + line2)
-                            .build()
-            );
-        }
-
-        return talePageResponseDtoList;
+        return ApiUtils.createTalePages(customTaleDetailResponseDto.getCustomTale(), customTaleDetailResponseDto.getCustomImageS3URL());
     }
 
     /**

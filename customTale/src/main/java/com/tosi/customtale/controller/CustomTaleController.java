@@ -1,7 +1,12 @@
 package com.tosi.customtale.controller;
 
+import com.tosi.common.client.ApiUtils;
+import com.tosi.common.dto.TalePageDto;
 import com.tosi.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.*;
+import com.tosi.customtale.dto.CustomTaleDetailRequestDto;
+import com.tosi.customtale.dto.CustomTaleDto;
+import com.tosi.customtale.dto.CustomTaleRequestDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,8 +55,8 @@ public class CustomTaleController {
             )
     )
     @PostMapping("/read")
-    public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
-        List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePagesWithDallE(customTaleResponseDto);
+    public ResponseEntity<List<TalePageDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
+        List<TalePageDto> talePageResponseDtoList = ApiUtils.createTalePages(customTaleResponseDto.getCustomTale(),customTaleResponseDto.getCustomImageDallEURL());
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
@@ -95,9 +100,9 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 상세 조회 후 책으로 읽기")
     @GetMapping("/{customTaleId}")
-    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @Parameter(example = "3") @PathVariable Long customTaleId) {
+    public ResponseEntity<List<TalePageDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @Parameter(example = "3") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
+        List<TalePageDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
