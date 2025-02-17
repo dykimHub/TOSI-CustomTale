@@ -70,8 +70,8 @@ public class CustomTaleController {
 
     @Operation(summary = "공개중인 커스텀 동화 목록")
     @GetMapping("/public")
-    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@RequestParam(defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 9, Sort.by(Sort.Direction.DESC, "regDate"));
+    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "9") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "regDate"));
         List<CustomTaleDto> customTaleDtoList = customTaleService.findPublicCustomTaleList(pageable);
         return ResponseEntity.ok()
                 .body(customTaleDtoList);

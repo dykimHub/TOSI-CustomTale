@@ -1,5 +1,7 @@
 package com.tosi.common.service;
 
+import com.tosi.common.constants.CachePrefix;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -15,5 +17,5 @@ public interface CacheService {
 
     void deleteCache(String key);
 
-    <T> Map<Long, Integer> createCacheMissMap(List<Long> ids, List<T> dtos);
+    <T> Map<String, T> createCacheMap(Map<Long, T> dtoMap, CachePrefix cachePrefix);
 }

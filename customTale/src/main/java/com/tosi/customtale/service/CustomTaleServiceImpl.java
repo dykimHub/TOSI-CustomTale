@@ -28,7 +28,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -45,7 +44,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
     /**
      * 해당 회원이 생성한 커스텀 동화 목록을 반환합니다.
-     * 추가가 빈번할 것으로 예상되어 커스텀 동화 ID 목록을 DB에서 조회합니다.
+     * 커스텀 동화 ID 목록을 DB에서 페이지네이션하여 조회합니다.
      * 캐시에서 커스텀 동화 객체를 조회를 시도하며, 없을 경우 DB에서 객체를 조회하여 반환합니다.
      *
      * @param userId   로그인한 회원 번호
@@ -57,60 +56,95 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
         // 해당 페이지의 커스텀 동화 ID 목록
         List<Long> customTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
-
         // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
-        List<CustomTaleDto> cachedCustomTaleDtos = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class)
-                .stream()
-                .filter(Objects::nonNull) // null(Cache Miss) 제외
+        List<CustomTaleDto> cachedCustomTaleDtoList = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
+        if (customTaleIds.size() == cachedCustomTaleDtoList.size())
+            return cachedCustomTaleDtoList;
+        // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
+        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList, true);
+        // DB에서 캐시에 없는 커스텀 동화를 조회
+        List<CustomTaleDto> missingCustomTaleDtoList = findMissingCustomTaleList(customTaleIds, cachedCustomTaleDtoMap);
+        /// DB에서 조회한 커스텀 동화 객체 Map을 생성
+        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList, false);
+        // DB에서 조회한 커스텀 동화로 캐시용 Map을 생성하고 저장
+        Map<String, CustomTaleDto> cacheMap = cacheService.createCacheMap(missingCustomTaleDtoMap, CachePrefix.CUSTOM_TALE);
+        cacheService.setMultiCaches(cacheMap, 6, TimeUnit.HOURS);
+        // ID 리스트 순서대로 캐시맵, DB맵을 조회하여 최종 커스텀 동화 리스트를 생성합니다.
+        return customTaleIds.stream()
+                .map(id -> cachedCustomTaleDtoMap.getOrDefault(id, missingCustomTaleDtoMap.get(id)))
                 .toList();
-
-        // null 값 없는 경우 그대로 반환
-        if (customTaleIds.size() == cachedCustomTaleDtos.size())
-            return cachedCustomTaleDtos;
-
-        // key: customTaleId, value: customTaleDto
-        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = cachedCustomTaleDtos.stream()
-                .collect(Collectors.toMap(
-                        CustomTaleDto::getCustomTaleId, // key
-                        c -> c) // value
-                );
-
-        // 캐시에 없는 커스텀 동화 ID 목록 생성하고 DB 조회
-        List<Long> missingCustomTaleIds = customTaleIds.stream()
-                .filter(id -> !cachedCustomTaleDtoMap.containsKey(id))
-                .toList();
-        List<CustomTaleDto> missingCustomTaleDtos = customTaleRepository.findCustomTaleList(missingCustomTaleIds);
-        if (missingCustomTaleDtos.isEmpty())
-            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALE_NOT_FOUND);
-
-        // key: customTaleId, value: customTaleDto(S3 URL 포함)
-        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = missingCustomTaleDtos.stream()
-                .collect(Collectors.toMap(
-                        CustomTaleDto::getCustomTaleId, // key
-                        c -> c.toWithoutS3Key(s3Service.findS3URL(c.getImageS3Key())) // value
-                ));
-
-        return fillMissingCache(customTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap, 6);
 
     }
 
     /**
      * 공개중인 커스텀 동화 목록을 반환합니다.
      * 추천 목록 요청은 4개, 일반 목록 요청은 9개를 반환합니다.
+     * 캐시에서 커스텀 동화 객체를 조회를 시도하며, 없을 경우 DB에서 객체를 조회하여 반환합니다.
      *
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
      * @return CustomTaleDto 객체(목록용 -> 내용 제외) 리스트
      */
     @Override
     public List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable) {
-        return customTaleRepository.findPublicCustomTaleList(pageable);
+        // 해당 페이지의 커스텀 동화 ID 목록
+        List<Long> customTaleIds = customTaleRepository.findPublicCustomTaleIdList(pageable);
+        // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
+        List<CustomTaleDto> cachedCustomTaleDtos = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
+        if (customTaleIds.size() == cachedCustomTaleDtos.size())
+            return cachedCustomTaleDtos;
+        // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
+        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtos, true);
+        // DB에서 캐시에 없는 커스텀 동화를 조회
+        List<CustomTaleDto> missingCustomTaleDtos = findMissingCustomTaleList(customTaleIds, cachedCustomTaleDtoMap);
+        // DB에서 조회한 커스텀 동화 객체 Map을 생성
+        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtos, false);
+        // ID 리스트 순서대로 캐시 Map, DB Map을 조회하여 최종 커스텀 동화 리스트를 생성
+        return customTaleIds.stream()
+                .map(id -> cachedCustomTaleDtoMap.getOrDefault(id, missingCustomTaleDtoMap.get(id)))
+                .toList();
+    }
+
+    /**
+     * 커스텀 동화 객체 리스트를 Map으로 변환하여 반환합니다.
+     *
+     * @param customTaleDtoList 커스텀 동화 객체 리스트
+     * @param s3UrlExists 객체에 S3 URL이 존재하는지 여부
+     * @return key: 커스텀 동화 객체 Id, value: 커스텀 동화 객체
+     */
+    private Map<Long, CustomTaleDto> createCustomTaleDtoMap(List<CustomTaleDto> customTaleDtoList, boolean s3UrlExists) {
+        return customTaleDtoList.stream()
+                .collect(Collectors.toMap(
+                        CustomTaleDto::getCustomTaleId, // key
+                        c -> s3UrlExists ? c : c.toWithoutS3Key(s3Service.findS3URL(c.getImageS3Key())) // value
+                ));
+    }
+
+    /**
+     * 캐시에 없는 커스텀 동화를 DB에서 조회하여 반환합니다.
+     *
+     * @param customTaleIds 커스텀 동화 객체 Id 목록
+     * @param cachedCustomTaleDtoMap 캐싱된 커스텀 동화 객체 Map
+     * @return 커스텀 동화 객체 리스트
+     */
+    private List<CustomTaleDto> findMissingCustomTaleList(List<Long> customTaleIds, Map<Long, CustomTaleDto> cachedCustomTaleDtoMap) {
+        // Map에 없는 id 필터링
+        List<Long> missingCustomTaleIds = customTaleIds.stream()
+                .filter(id -> !cachedCustomTaleDtoMap.containsKey(id))
+                .toList();
+        // DB에서 해당 id 목록 조회
+        List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIds);
+        if (missingCustomTaleDtoList.isEmpty())
+            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALE_NOT_FOUND);
+
+        return missingCustomTaleDtoList;
+
     }
 
     /**
      * DallE URL을 활용하여 이미지를 S3에 저장하고 S3 Key를 반환 받습니다.
      * 해당 S3 Key, 커스텀 동화 등을 활용하여 CustomTale 엔티티를 생성한 후 저장합니다.
      * 커스텀 동화를 만들 때 사용한 키워드, 배경 등을 활용하여 CustomTaleElement을 생성한 후 저장합니다.
-     * 최신 등록된 커스텀 동화 객체(S3 URL 포함)를 1시간 동안 캐싱합니다.
+     * 최신 등록된 커스텀 동화 객체를 1시간 동안 캐싱하여 공개중인 동화 목록에서 초기 트래픽 급증 처리
      *
      * @param userId                     회원 번호
      * @param customTaleDetailRequestDto 커스텀 동화 정보가 담긴 CustomTaleDetailRequestDto 객체
@@ -237,35 +271,6 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         findCustomTaleDetailDto(customTaleId);
         customTaleRepository.deleteById(customTaleId);
         return SuccessResponse.of("해당 커스텀 동화가 성공적으로 삭제되었습니다.");
-    }
-
-    /**
-     * 캐시, DB에서 조회한 커스텀 동화를 합쳐 리스트 순서대로 반환합니다.
-     * DB에서 조회한 커스텀 동화를 캐시에 저장합니다.
-     *
-     * @param ids 커스텀 동화 id 목록
-     * @param cachedDtoMap 캐시에서 조회한 커스텀 동화 Map
-     * @param dbFetchedDtoMap DB에서 조회한 커스텀 동화 Map
-     * @param timeout 캐시 만료 시간
-     * @return CustomTaleDto 객체 리스트
-     */
-    private List<CustomTaleDto> fillMissingCache(List<Long> ids, Map<Long, CustomTaleDto> cachedDtoMap, Map<Long, CustomTaleDto> dbFetchedDtoMap, long timeout) {
-        // Id 목록을 순회하면서 캐시Map에서 조회하고 없으면 DBMap에서 조회합니다.
-        List<CustomTaleDto> mergedList = ids.stream()
-                .map(id -> cachedDtoMap.getOrDefault(id, dbFetchedDtoMap.get(id)))
-                .toList();
-
-        // 캐시용 맵을 생성합니다.
-        Map<String, CustomTaleDto> cacheMap = dbFetchedDtoMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        entry -> CachePrefix.CUSTOM_TALE.buildCacheKey(entry.getKey()), // key
-                        Map.Entry::getValue // value
-                ));
-
-        cacheService.setMultiCaches(cacheMap, timeout, TimeUnit.HOURS);
-
-        return mergedList;
-
     }
 
     /**

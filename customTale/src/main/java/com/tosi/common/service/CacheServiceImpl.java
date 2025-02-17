@@ -3,16 +3,14 @@ package com.tosi.common.service;
 import com.tosi.common.constants.CachePrefix;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -47,6 +45,7 @@ public class CacheServiceImpl implements CacheService {
     public <T> List<T> getMultiCaches(List<String> keys, Class<T> type) {
         List<Object> cachedDtos = redisTemplate.opsForValue().multiGet(keys);
         return cachedDtos.stream()
+                .filter(Objects::nonNull)
                 .map(type::cast)
                 .toList();
     }
@@ -101,24 +100,21 @@ public class CacheServiceImpl implements CacheService {
     }
 
     /**
-     * DB에서 조회한 ID 목록과 캐시에서 조회한 결과를 비교하여, 캐시에 없는 객체의 ID와 인덱스를 매핑한 Map을 생성합니다.
+     * 캐시 저장에 활용되는 Map을 생성합니다.
      *
-     * @param ids  DB에서 조회한 id 목록
-     * @param dtos id 목록을 캐시에서 조회한 결과
-     * @param <T>  제네릭(dto 타입)
-     * @return Map - key: 동화 id, value: 인덱스
+     * @param dtoMap key: 객체 id, value: 객체
+     * @param <T>  제네릭(메서드 호출된 순간 타입 결정)
+     * @return Map - key: 캐시 key, value: 객체
      */
     @Override
-    public <T> Map<Long, Integer> createCacheMissMap(List<Long> ids, List<T> dtos) {
-        Map<Long, Integer> cacheMissIndexMap = new HashMap<>();
+    public <T> Map<String, T> createCacheMap(Map<Long, T> dtoMap, CachePrefix cachePrefix) {
+        Map<String, T> cacheMap = dtoMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> cachePrefix.buildCacheKey(entry.getKey()), // key
+                        Map.Entry::getValue // value
+                ));
 
-        for (int i = 0; i < dtos.size(); i++) {
-            if (dtos.get(i) == null) {
-                cacheMissIndexMap.put(ids.get(i), i);
-            }
-        }
-
-        return cacheMissIndexMap;
+        return cacheMap;
 
     }
 
