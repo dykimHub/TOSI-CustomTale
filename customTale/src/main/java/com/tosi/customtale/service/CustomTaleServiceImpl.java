@@ -1,9 +1,17 @@
 package com.tosi.customtale.service;
 
+import com.tosi.common.client.ApiClient;
+import com.tosi.common.constants.ApiPaths;
+import com.tosi.common.constants.CachePrefix;
 import com.tosi.common.exception.CustomException;
 import com.tosi.common.exception.SuccessResponse;
+import com.tosi.common.service.CacheService;
+import com.tosi.common.service.S3Service;
 import com.tosi.customtale.common.exception.ExceptionCode;
-import com.tosi.customtale.dto.*;
+import com.tosi.customtale.dto.CustomTaleDetailRequestDto;
+import com.tosi.customtale.dto.CustomTaleDetailResponseDto;
+import com.tosi.customtale.dto.CustomTaleDto;
+import com.tosi.customtale.dto.TalePageResponseDto;
 import com.tosi.customtale.entity.CustomTale;
 import com.tosi.customtale.entity.CustomTaleElement;
 import com.tosi.customtale.repository.CustomTaleElementRepository;
@@ -14,39 +22,81 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class CustomTaleServiceImpl implements CustomTaleService {
     private final S3Service s3Service;
+    private final CacheService cacheService;
     private final CustomTaleRepository customTaleRepository;
     private final CustomTaleElementRepository customTaleElementRepository;
-    private final RestTemplate restTemplate;
+    private final ApiClient apiClient;
     @Value("${service.user.url}")
     private String userURL;
 
     /**
      * 해당 회원이 생성한 커스텀 동화 목록을 반환합니다.
+     * 추가가 빈번할 것으로 예상되어 커스텀 동화 ID 목록을 DB에서 조회합니다.
+     * 캐시에서 커스텀 동화 객체를 조회를 시도하며, 없을 경우 DB에서 객체를 조회하여 반환합니다.
      *
      * @param userId   로그인한 회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
-     * @return CustomTaleDto 객체(목록용 -> 내용 제외) 리스트
+     * @return CustomTaleDto 객체 리스트
+     * @throws CustomException DB에서 커스텀 동화 목록을 찾을 수 없으면 예외 처리
      */
     @Override
     public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
-        return customTaleRepository.findCustomTaleListByUserId(userId, pageable);
+        // 해당 페이지의 커스텀 동화 ID 목록
+        List<Long> customTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
+
+        // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
+        List<CustomTaleDto> cachedCustomTaleDtos = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class)
+                .stream()
+                .filter(Objects::nonNull) // null(Cache Miss) 제외
+                .toList();
+
+        // null 값 없는 경우 그대로 반환
+        if (customTaleIds.size() == cachedCustomTaleDtos.size())
+            return cachedCustomTaleDtos;
+
+        // key: customTaleId, value: customTaleDto
+        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = cachedCustomTaleDtos.stream()
+                .collect(Collectors.toMap(
+                        CustomTaleDto::getCustomTaleId, // key
+                        c -> c) // value
+                );
+
+        // 캐시에 없는 커스텀 동화 ID 목록 생성하고 DB 조회
+        List<Long> missingCustomTaleIds = customTaleIds.stream()
+                .filter(id -> !cachedCustomTaleDtoMap.containsKey(id))
+                .toList();
+        List<CustomTaleDto> missingCustomTaleDtos = customTaleRepository.findCustomTaleList(missingCustomTaleIds);
+        if (missingCustomTaleDtos.isEmpty())
+            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALE_NOT_FOUND);
+
+        // key: customTaleId, value: customTaleDto(S3 URL 포함)
+        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = missingCustomTaleDtos.stream()
+                .collect(Collectors.toMap(
+                        CustomTaleDto::getCustomTaleId, // key
+                        c -> c.toWithoutS3Key(s3Service.findS3URL(c.getImageS3Key())) // value
+                ));
+
+        return fillMissingCache(customTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap, 6);
+
     }
 
     /**
      * 공개중인 커스텀 동화 목록을 반환합니다.
+     * 추천 목록 요청은 4개, 일반 목록 요청은 9개를 반환합니다.
      *
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
      * @return CustomTaleDto 객체(목록용 -> 내용 제외) 리스트
@@ -60,6 +110,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * DallE URL을 활용하여 이미지를 S3에 저장하고 S3 Key를 반환 받습니다.
      * 해당 S3 Key, 커스텀 동화 등을 활용하여 CustomTale 엔티티를 생성한 후 저장합니다.
      * 커스텀 동화를 만들 때 사용한 키워드, 배경 등을 활용하여 CustomTaleElement을 생성한 후 저장합니다.
+     * 최신 등록된 커스텀 동화 객체(S3 URL 포함)를 1시간 동안 캐싱합니다.
      *
      * @param userId                     회원 번호
      * @param customTaleDetailRequestDto 커스텀 동화 정보가 담긴 CustomTaleDetailRequestDto 객체
@@ -78,6 +129,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
                 customTaleDetailRequestDto.getCustomTale(),
                 customTaleDetailRequestDto.getIsPublic()
         );
+
         CustomTale savedCustomTale = customTaleRepository.save(customTale);
         Long savedCustomTaleId = savedCustomTale.getCustomTaleId();
 
@@ -92,6 +144,10 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
         }
 
+        cacheService.setCache(CachePrefix.CUSTOM_TALE.buildCacheKey(savedCustomTaleId),
+                CustomTaleDto.of(savedCustomTaleId, savedCustomTale.getTitle(), s3Service.findS3URL(savedCustomTale.getImageS3Key()), savedCustomTale.getIsPublic()),
+                1, TimeUnit.HOURS);
+
         return SuccessResponse.of("커스텀 동화 저장에 성공하였습니다.");
     }
 
@@ -103,7 +159,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * @param userId       회원 번호
      * @param customTaleId 커스텀 동화 번호
      * @return TalePageResponse 객체 리스트
-     * @thorws 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
+     * @throws CustomException 본인이 아닌 회원이 비공개 커스텀 동화를 조회한 경우
      */
     @Cacheable(value = "customTaleDetail", key = "#customTaleId")
     @Override
@@ -123,7 +179,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
      *
      * @param customTale 커스텀 동화
-     * @param imageURL 이미지 주소
+     * @param imageURL   이미지 주소
      * @return TalePageResponse 객체 리스트
      */
     @Override
@@ -184,6 +240,35 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     }
 
     /**
+     * 캐시, DB에서 조회한 커스텀 동화를 합쳐 리스트 순서대로 반환합니다.
+     * DB에서 조회한 커스텀 동화를 캐시에 저장합니다.
+     *
+     * @param ids 커스텀 동화 id 목록
+     * @param cachedDtoMap 캐시에서 조회한 커스텀 동화 Map
+     * @param dbFetchedDtoMap DB에서 조회한 커스텀 동화 Map
+     * @param timeout 캐시 만료 시간
+     * @return CustomTaleDto 객체 리스트
+     */
+    private List<CustomTaleDto> fillMissingCache(List<Long> ids, Map<Long, CustomTaleDto> cachedDtoMap, Map<Long, CustomTaleDto> dbFetchedDtoMap, long timeout) {
+        // Id 목록을 순회하면서 캐시Map에서 조회하고 없으면 DBMap에서 조회합니다.
+        List<CustomTaleDto> mergedList = ids.stream()
+                .map(id -> cachedDtoMap.getOrDefault(id, dbFetchedDtoMap.get(id)))
+                .toList();
+
+        // 캐시용 맵을 생성합니다.
+        Map<String, CustomTaleDto> cacheMap = dbFetchedDtoMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> CachePrefix.CUSTOM_TALE.buildCacheKey(entry.getKey()), // key
+                        Map.Entry::getValue // value
+                ));
+
+        cacheService.setMultiCaches(cacheMap, timeout, TimeUnit.HOURS);
+
+        return mergedList;
+
+    }
+
+    /**
      * 커스텀 동화 번호로 커스텀 동화 상세 정보(내용 포함)를 조회합니다.
      *
      * @param customTaleId 커스텀 동화 번호
@@ -206,14 +291,9 @@ public class CustomTaleServiceImpl implements CustomTaleService {
     public Long findUserAuthorization(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", accessToken);
-        HttpEntity<String> httpEntity = new HttpEntity<>(headers);
-        try {
-            Long userId = restTemplate.exchange(userURL + "/auth",
-                    HttpMethod.GET, httpEntity, Long.class).getBody();
-            return userId;
-        } catch (Exception e) {
-            throw new CustomException(ExceptionCode.INVALID_TOKEN);
-        }
+        Long userId = apiClient.getObject(ApiPaths.AUTH.buildPath(userURL), headers, Long.class);
+        return userId;
+
     }
 
 }
