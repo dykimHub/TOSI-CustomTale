@@ -19,6 +19,7 @@ public enum CachePrefix {
 
     // 커스텀 동화 서비스
     CUSTOM_TALE("customTaleCache::"),
+    MY_CUSTOM_TALE("myCustomTaleCache::"),
     CUSTOM_TALE_DETAIL("customTaleDetailCache::");
 
 

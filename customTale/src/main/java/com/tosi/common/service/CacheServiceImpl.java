@@ -100,6 +100,7 @@ public class CacheServiceImpl implements CacheService {
     @Override
     public void deleteCache(String key) {
         redisTemplate.delete(key);
+        log.info("Cache Delete: {}", key);
     }
 
     /**

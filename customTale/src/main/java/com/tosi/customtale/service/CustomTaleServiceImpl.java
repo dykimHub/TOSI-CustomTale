@@ -41,8 +41,8 @@ public class CustomTaleServiceImpl implements CustomTaleService {
 
     /**
      * 해당 회원이 생성한 커스텀 동화 목록을 반환합니다.
-     * 커스텀 동화 ID 목록을 DB에서 페이지네이션하여 조회합니다.
-     * 캐시에서 커스텀 동화 객체를 조회를 시도하며, 없을 경우 DB에서 객체를 조회하여 반환합니다.
+     * 커스텀 동화 ID 목록은 DB에서 페이지네이션하여 조회합니다.
+     * 커스텀 동화 객체를 조회를 시도하며, 없을 경우 DB에서 객체를 조회하여 반환합니다.
      *
      * @param userId   로그인한 회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
@@ -50,18 +50,27 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      */
     @Override
     public List<CustomTaleDto> findCustomTaleList(Long userId, Pageable pageable) {
-        // 해당 페이지의 커스텀 동화 ID 목록
-        List<Long> customTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
+        List<Long> myCustomTaleIds;
+        // 해당 페이지의 커스텀 동화 ID 목록 조회
+        if (pageable.getPageNumber() == 0) { // 1페이지라면 Id 목록 캐시에서 조회
+            myCustomTaleIds = cacheService.getCache(CachePrefix.MY_CUSTOM_TALE.buildCacheKey(userId), List.class)
+                    .orElseGet(() -> {
+                        List<Long> newMyCustomTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
+                        cacheService.setCache(CachePrefix.MY_CUSTOM_TALE.buildCacheKey(userId), newMyCustomTaleIds, 6, TimeUnit.HOURS);
+                        return newMyCustomTaleIds;
+                    });
+        } else {
+            myCustomTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
+        }
         // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
-        List<CustomTaleDto> cachedCustomTaleDtoList = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
+        List<CustomTaleDto> cachedCustomTaleDtoList = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(myCustomTaleIds), CustomTaleDto.class);
         // 캐시 미스가 없다면, 그대로 캐시된 결과를 반환
-        if (customTaleIds.size() == cachedCustomTaleDtoList.size())
+        if (myCustomTaleIds.size() == cachedCustomTaleDtoList.size())
             return cachedCustomTaleDtoList;
         // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
         Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList);
-        // DB에서 캐시에 없는 커스텀 동화를 조회
-        List<Long> missingCustomTaleIdList = cacheService.findMissingIdList(customTaleIds, cachedCustomTaleDtoMap);
-        // 회원이 생성한 커스텀 동화가 없으면 빈 리스트 반환
+        // DB에서 캐시에 없는 커스텀 동화를 조회, 예외처리 X(회원이 생성한 커스텀 동화가 없으면 빈 리스트 반환)
+        List<Long> missingCustomTaleIdList = cacheService.findMissingIdList(myCustomTaleIds, cachedCustomTaleDtoMap);
         List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIdList);
         /// DB에서 조회한 커스텀 동화 객체 Map을 생성
         Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList);
@@ -69,7 +78,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         Map<String, CustomTaleDto> cacheMap = cacheService.createCacheMap(missingCustomTaleDtoMap, CachePrefix.CUSTOM_TALE);
         cacheService.setMultiCaches(cacheMap, 6, TimeUnit.HOURS);
         // ID 리스트 순서대로 캐시맵, DB맵을 조회하여 최종 커스텀 동화 리스트를 생성합니다.
-        return cacheService.mergedCachedAndMissing(customTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap);
+        return cacheService.mergedCachedAndMissing(myCustomTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap);
 
     }
 
@@ -92,11 +101,9 @@ public class CustomTaleServiceImpl implements CustomTaleService {
             return cachedCustomTaleDtoList;
         // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
         Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList);
-        // DB에서 캐시에 없는 커스텀 동화를 조회
+        // DB에서 캐시에 없는 커스텀 동화를 조회, 예외처리 X(회원이 생성한 커스텀 동화가 없으면 빈 리스트 반환)
         List<Long> missingCustomTaleIdList = cacheService.findMissingIdList(customTaleIds, cachedCustomTaleDtoMap);
         List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIdList);
-        if (missingCustomTaleDtoList.isEmpty())
-            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALES_NOT_FOUND);
         // DB에서 조회한 커스텀 동화 객체 Map을 생성
         Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList);
         // ID 리스트 순서대로 캐시 Map, DB Map을 조회하여 최종 커스텀 동화 리스트를 생성
@@ -113,7 +120,7 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         return customTaleDtoList.stream()
                 .collect(Collectors.toMap(
                         CustomTaleDto::getCustomTaleId, // key
-                        c -> c.getImageS3Key() == null ? c : c.toWithoutS3Key(c.getImageS3Key())
+                        c -> c.getImageS3Key() == null ? c : c.toWithoutS3Key(c.getImageS3Key()) // value
                 ));
     }
 
@@ -140,6 +147,9 @@ public class CustomTaleServiceImpl implements CustomTaleService {
                 customTaleDetailRequestDto.getCustomTale(),
                 customTaleDetailRequestDto.getIsPublic()
         );
+
+        // 회원이 생성한 커스텀 동화 캐시 갱신
+        cacheService.deleteCache(CachePrefix.MY_CUSTOM_TALE.buildCacheKey(userId));
 
         CustomTale savedCustomTale = customTaleRepository.save(customTale);
         Long savedCustomTaleId = savedCustomTale.getCustomTaleId();
@@ -200,17 +210,21 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 공개 여부 수정에 성공하면 SuccessResponse를 반환합니다.
      * 커스텀 동화 상세 객체를 캐시에서 삭제합니다.
      *
-     * @param customTaleId 커스텀 동화 번호와 공개 여부가 담긴 PublicStatusRequestDto 객체
+     * @param userId 회원 번호
+     * @param customTaleId 커스텀 동화 번호
      * @return SuccessResponse 객체
      */
     @Transactional
     @Override
-    public SuccessResponse modifyCustomTalePublicStatus(Long customTaleId) {
+    public SuccessResponse modifyCustomTalePublicStatus(Long userId, Long customTaleId) {
         if (!customTaleRepository.existsById(customTaleId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND);
 
+        // 캐시 초기화
+        cacheService.deleteCache(CachePrefix.CUSTOM_TALE.buildCacheKey(customTaleId));
         cacheService.deleteCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId));
-        customTaleRepository.modifyCustomTalePublicStatus(customTaleId);
+
+        int result = customTaleRepository.modifyCustomTalePublicStatus(customTaleId);
         return SuccessResponse.of("커스텀 동화 공개 여부가 성공적으로 수정되었습니다.");
     }
 
@@ -218,17 +232,22 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      * 해당 커스텀 동화를 삭제합니다.
      * 커스텀 동화 상세 객체를 캐시에서 삭제합니다.
      *
+     * @param userId 회원 번호
      * @param customTaleId 커스텀 동화 번호
      * @return 커스텀 동화가 삭제되면 SuccessResponse를 반환합니다.
      */
     @Transactional
     @Override
-    public SuccessResponse deleteCustomTale(Long customTaleId) {
+    public SuccessResponse deleteCustomTale(Long userId, Long customTaleId) {
         if (!customTaleRepository.existsById(customTaleId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND);
 
+        // 캐시 초기화
+        cacheService.deleteCache(CachePrefix.CUSTOM_TALE.buildCacheKey(customTaleId));
         cacheService.deleteCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId));
-        customTaleRepository.deleteById(customTaleId);
+        cacheService.deleteCache(CachePrefix.MY_CUSTOM_TALE.buildCacheKey(userId));
+
+        customTaleRepository.deleteById(userId);
         return SuccessResponse.of("해당 커스텀 동화가 성공적으로 삭제되었습니다.");
     }
 

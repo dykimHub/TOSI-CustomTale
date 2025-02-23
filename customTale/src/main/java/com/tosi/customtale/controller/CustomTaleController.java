@@ -111,7 +111,7 @@ public class CustomTaleController {
     @PutMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(customTaleId);
+        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
@@ -120,7 +120,7 @@ public class CustomTaleController {
     @DeleteMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.deleteCustomTale(customTaleId);
+        SuccessResponse successResponse = customTaleService.deleteCustomTale(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
