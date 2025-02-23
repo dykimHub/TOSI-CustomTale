@@ -54,21 +54,22 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         List<Long> customTaleIds = customTaleRepository.findCustomTaleIdListByUserId(userId, pageable);
         // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
         List<CustomTaleDto> cachedCustomTaleDtoList = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
+        // 캐시 미스가 없다면, 그대로 캐시된 결과를 반환
         if (customTaleIds.size() == cachedCustomTaleDtoList.size())
             return cachedCustomTaleDtoList;
         // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
-        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList, true);
+        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList);
         // DB에서 캐시에 없는 커스텀 동화를 조회
-        List<CustomTaleDto> missingCustomTaleDtoList = findMissingCustomTaleList(customTaleIds, cachedCustomTaleDtoMap);
+        List<Long> missingCustomTaleIdList = cacheService.findMissingIdList(customTaleIds, cachedCustomTaleDtoMap);
+        // 회원이 생성한 커스텀 동화가 없으면 빈 리스트 반환
+        List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIdList);
         /// DB에서 조회한 커스텀 동화 객체 Map을 생성
-        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList, false);
+        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList);
         // DB에서 조회한 커스텀 동화로 캐시용 Map을 생성하고 저장
         Map<String, CustomTaleDto> cacheMap = cacheService.createCacheMap(missingCustomTaleDtoMap, CachePrefix.CUSTOM_TALE);
         cacheService.setMultiCaches(cacheMap, 6, TimeUnit.HOURS);
         // ID 리스트 순서대로 캐시맵, DB맵을 조회하여 최종 커스텀 동화 리스트를 생성합니다.
-        return customTaleIds.stream()
-                .map(id -> cachedCustomTaleDtoMap.getOrDefault(id, missingCustomTaleDtoMap.get(id)))
-                .toList();
+        return cacheService.mergedCachedAndMissing(customTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap);
 
     }
 
@@ -85,56 +86,35 @@ public class CustomTaleServiceImpl implements CustomTaleService {
         // 해당 페이지의 커스텀 동화 ID 목록
         List<Long> customTaleIds = customTaleRepository.findPublicCustomTaleIdList(pageable);
         // 커스텀 동화 ID 목록을 CacheKey 목록으로 변환 후 캐시 조회
-        List<CustomTaleDto> cachedCustomTaleDtos = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
-        if (customTaleIds.size() == cachedCustomTaleDtos.size())
-            return cachedCustomTaleDtos;
+        List<CustomTaleDto> cachedCustomTaleDtoList = cacheService.getMultiCaches(CachePrefix.CUSTOM_TALE.buildCacheKeys(customTaleIds), CustomTaleDto.class);
+        // 캐시 미스가 없다면, 그대로 캐시된 결과를 반환합니다.
+        if (customTaleIds.size() == cachedCustomTaleDtoList.size())
+            return cachedCustomTaleDtoList;
         // 캐시에서 조회한 커스텀 동화 객체 Map을 생성
-        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtos, true);
+        Map<Long, CustomTaleDto> cachedCustomTaleDtoMap = createCustomTaleDtoMap(cachedCustomTaleDtoList);
         // DB에서 캐시에 없는 커스텀 동화를 조회
-        List<CustomTaleDto> missingCustomTaleDtos = findMissingCustomTaleList(customTaleIds, cachedCustomTaleDtoMap);
+        List<Long> missingCustomTaleIdList = cacheService.findMissingIdList(customTaleIds, cachedCustomTaleDtoMap);
+        List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIdList);
+        if (missingCustomTaleDtoList.isEmpty())
+            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALES_NOT_FOUND);
         // DB에서 조회한 커스텀 동화 객체 Map을 생성
-        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtos, false);
+        Map<Long, CustomTaleDto> missingCustomTaleDtoMap = createCustomTaleDtoMap(missingCustomTaleDtoList);
         // ID 리스트 순서대로 캐시 Map, DB Map을 조회하여 최종 커스텀 동화 리스트를 생성
-        return customTaleIds.stream()
-                .map(id -> cachedCustomTaleDtoMap.getOrDefault(id, missingCustomTaleDtoMap.get(id)))
-                .toList();
+        return cacheService.mergedCachedAndMissing(customTaleIds, cachedCustomTaleDtoMap, missingCustomTaleDtoMap);
     }
 
     /**
      * 커스텀 동화 객체 리스트를 Map으로 변환하여 반환합니다.
      *
      * @param customTaleDtoList 커스텀 동화 객체 리스트
-     * @param s3UrlExists       객체에 S3 URL이 존재하는지 여부
      * @return key: 커스텀 동화 객체 Id, value: 커스텀 동화 객체
      */
-    private Map<Long, CustomTaleDto> createCustomTaleDtoMap(List<CustomTaleDto> customTaleDtoList, boolean s3UrlExists) {
+    private Map<Long, CustomTaleDto> createCustomTaleDtoMap(List<CustomTaleDto> customTaleDtoList) {
         return customTaleDtoList.stream()
                 .collect(Collectors.toMap(
                         CustomTaleDto::getCustomTaleId, // key
-                        c -> s3UrlExists ? c : c.toWithoutS3Key(s3Service.findS3URL(c.getImageS3Key())) // value
+                        c -> c.getImageS3Key() == null ? c : c.toWithoutS3Key(c.getImageS3Key())
                 ));
-    }
-
-    /**
-     * 캐시에 없는 커스텀 동화를 DB에서 조회하여 반환합니다.
-     *
-     * @param customTaleIds          커스텀 동화 객체 Id 목록
-     * @param cachedCustomTaleDtoMap 캐싱된 커스텀 동화 객체 Map
-     * @return 커스텀 동화 객체 리스트
-     * @throws CustomException DB에서 커스텀 동화 목록을 찾을 수 없으면 예외 처리
-     */
-    private List<CustomTaleDto> findMissingCustomTaleList(List<Long> customTaleIds, Map<Long, CustomTaleDto> cachedCustomTaleDtoMap) {
-        // Map에 없는 id 필터링
-        List<Long> missingCustomTaleIds = customTaleIds.stream()
-                .filter(id -> !cachedCustomTaleDtoMap.containsKey(id))
-                .toList();
-        // DB에서 해당 id 목록 조회
-        List<CustomTaleDto> missingCustomTaleDtoList = customTaleRepository.findCustomTaleList(missingCustomTaleIds);
-        if (missingCustomTaleDtoList.isEmpty())
-            throw new CustomException(ExceptionCode.PARTIAL_CUSTOM_TALE_NOT_FOUND);
-
-        return missingCustomTaleDtoList;
-
     }
 
     /**
@@ -199,15 +179,21 @@ public class CustomTaleServiceImpl implements CustomTaleService {
      */
     @Override
     public List<TalePageDto> findCustomTaleDetail(Long userId, Long customTaleId) {
-        CustomTaleDetailResponseDto customTaleDetailResponseDto = cacheService.getCache(CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId), CustomTaleDetailResponseDto.class)
-                .or(() -> customTaleRepository.findCustomTaleDetail(customTaleId).map(c -> c.toWithoutS3Key(s3Service.findS3URL(c.getCustomImageS3Key()))))
-                .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
+        String cacheKey = CachePrefix.CUSTOM_TALE_DETAIL.buildCacheKey(customTaleId);
+        CustomTaleDetailResponseDto customTaleDetailResponseDto = cacheService.getCache(cacheKey, CustomTaleDetailResponseDto.class)
+                .orElseGet(() -> {
+                    CustomTaleDetailResponseDto newCustomTaleDetailResponseDto = customTaleRepository.findCustomTaleDetail(customTaleId).map(c -> c.toWithoutS3Key(s3Service.findS3URL(c.getCustomImageS3Key())))
+                            .orElseThrow(() -> new CustomException(ExceptionCode.CUSTOM_TALE_NOT_FOUND));
+
+                    cacheService.setCache(cacheKey, newCustomTaleDetailResponseDto, 1, TimeUnit.HOURS);
+                    return newCustomTaleDetailResponseDto;
+                });
 
         // 커스텀 동화 공개 여부가 false인데, 로그인한 회원 번호와 커스텀 동화를 생성한 회원의 번호가 일치하지 않는 경우
         if (!customTaleDetailResponseDto.getIsPublic() && !customTaleDetailResponseDto.getUserId().equals(userId))
             throw new CustomException(ExceptionCode.CUSTOM_TALE_NOT_PUBLIC);
 
-        return ApiUtils.createTalePages(customTaleDetailResponseDto.getCustomTale(), customTaleDetailResponseDto.getCustomImageS3URL());
+        return ApiUtils.createTalePages(new String[]{customTaleDetailResponseDto.getCustomTale()}, List.of(customTaleDetailResponseDto.getCustomImageS3URL()));
     }
 
     /**

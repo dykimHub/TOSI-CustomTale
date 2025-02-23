@@ -13,32 +13,38 @@ public class ApiUtils {
      * 동화 페이지를 생성합니다.
      * 왼쪽 페이지는 삽화, 오른쪽 페이지는 동화 본문을 2문장씩 삽입합니다.
      *
-     * @param customTale 커스텀 동화 내용, 이미지 주소(DalleURL, S3URL)
+     * @param contents 동화 내용 배열
+     * @param images   이미지 주소 리스트(DalleURL, S3URL)
      * @return TalePageDto 리스트
      */
-    public List<TalePageDto> createTalePages(String customTale, String imageURL) {
-        String[] lines = customTale.split("\n");
+    public List<TalePageDto> createTalePages(String[] contents, List<String> images) {
+        List<TalePageDto> talePages = new ArrayList<>();
+        int page = 1;
 
-        int pageNum = 1;
-        List<TalePageDto> talePageList = new ArrayList<>();
+        for (int i = 0; i < contents.length; i++) {
+            String content = contents[i]; // 동화 본문
+            String imageURL = images.get(i); // 삽화
 
-        for (int i = 0; i < lines.length; i += 2) {
-            String line1 = lines[i];
-            // line1이 마지막 문장이면 다음 문장은 빈 문장
-            String line2 = (i + 1 < lines.length) ? lines[i + 1] : "";
+            String[] lines = content.split("\n");
+            for (int j = 0; j < lines.length; j += 2) {
+                String line1 = lines[j];
+                // line1이 마지막 문장이면 다음 문장은 빈 문장
+                String line2 = (j + 1 < lines.length) ? lines[j + 1] : "";
 
-            talePageList.add(
-                    TalePageDto.builder()
-                            .leftNo(pageNum++)
-                            .left(imageURL)
-                            .rightNo(pageNum++)
-                            .right(line1 + "\n" + line2)
-                            .flipped(false)
-                            .build()
-            );
+                talePages.add(
+                        TalePageDto.builder()
+                                .leftNo(page++)
+                                .left(imageURL)
+                                .rightNo(page++)
+                                .right(line1 + "\n" + line2)
+                                .build()
+                );
+
+            }
+
 
         }
 
-        return talePageList;
+        return talePages;
     }
 }

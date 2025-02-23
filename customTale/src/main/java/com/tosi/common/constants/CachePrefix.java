@@ -11,9 +11,10 @@ public enum CachePrefix {
     // 동화 서비스
     TALE("taleCache::"),
     TALE_DETAIL("taleDetailCache::"),
+    TALE_LIST("taleListPage::"),
 
     // 회원 서비스
-    POPULAR_TALE("popularTaleIdCache::"),
+    POPULAR_TALE("popularTaleCache::"),
     FAVORITE_TALE("favoriteTaleIdCache::"),
 
     // 커스텀 동화 서비스

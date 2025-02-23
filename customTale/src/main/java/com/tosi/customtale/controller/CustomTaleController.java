@@ -56,7 +56,7 @@ public class CustomTaleController {
     )
     @PostMapping("/read")
     public ResponseEntity<List<TalePageDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
-        List<TalePageDto> talePageResponseDtoList = ApiUtils.createTalePages(customTaleResponseDto.getCustomTale(),customTaleResponseDto.getCustomImageDallEURL());
+        List<TalePageDto> talePageResponseDtoList = ApiUtils.createTalePages(new String[]{customTaleResponseDto.getCustomTale()}, List.of(customTaleResponseDto.getCustomTale()));
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
