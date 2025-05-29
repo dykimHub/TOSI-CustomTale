@@ -53,7 +53,7 @@ public class S3ServiceImpl implements S3Service {
      * @return 저장된 이미지의 S3 Key
      */
     @Override
-    public String addCustomImageToS3(String customImageURL, Long userId) {
+    public String uploadImage(String customImageURL, Long userId) {
         InputStream inputStream = getInputStreamFromURL(customImageURL);
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
