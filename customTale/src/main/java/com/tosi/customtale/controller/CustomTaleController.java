@@ -1,7 +1,12 @@
 package com.tosi.customtale.controller;
 
-import com.tosi.customtale.common.exception.SuccessResponse;
-import com.tosi.customtale.dto.*;
+import com.tosi.common.client.ApiUtils;
+import com.tosi.common.dto.TalePageDto;
+import com.tosi.common.exception.SuccessResponse;
+import com.tosi.customtale.dto.CustomTaleDetailRequestDto;
+import com.tosi.customtale.dto.CustomTaleDto;
+import com.tosi.customtale.dto.CustomTaleRequestDto;
+import com.tosi.customtale.dto.CustomTaleResponseDto;
 import com.tosi.customtale.service.CreateCustomTaleService;
 import com.tosi.customtale.service.CustomTaleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,8 +55,8 @@ public class CustomTaleController {
             )
     )
     @PostMapping("/read")
-    public ResponseEntity<List<TalePageResponseDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
-        List<TalePageResponseDto> talePageResponseDtoList = createCustomTaleService.createCustomTalePagesWithDallE(customTaleResponseDto);
+    public ResponseEntity<List<TalePageDto>> createCustomTalePages(@RequestBody CustomTaleResponseDto customTaleResponseDto) {
+        List<TalePageDto> talePageResponseDtoList = ApiUtils.createTalePages(new String[]{customTaleResponseDto.getCustomTale()}, List.of(customTaleResponseDto.getCustomTale()));
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
@@ -70,8 +75,8 @@ public class CustomTaleController {
 
     @Operation(summary = "공개중인 커스텀 동화 목록")
     @GetMapping("/public")
-    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@RequestParam(defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 9, Sort.by(Sort.Direction.DESC, "regDate"));
+    public ResponseEntity<List<CustomTaleDto>> findPublicCustomTales(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "9") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "regDate"));
         List<CustomTaleDto> customTaleDtoList = customTaleService.findPublicCustomTaleList(pageable);
         return ResponseEntity.ok()
                 .body(customTaleDtoList);
@@ -95,9 +100,9 @@ public class CustomTaleController {
 
     @Operation(summary = "커스텀 동화 상세 조회 후 책으로 읽기")
     @GetMapping("/{customTaleId}")
-    public ResponseEntity<List<TalePageResponseDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @Parameter(example = "3") @PathVariable Long customTaleId) {
+    public ResponseEntity<List<TalePageDto>> findCustomTaleDetail(@RequestHeader("Authorization") String accessToken, @Parameter(example = "3") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        List<TalePageResponseDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
+        List<TalePageDto> talePageResponseDtoList = customTaleService.findCustomTaleDetail(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(talePageResponseDtoList);
     }
@@ -106,7 +111,7 @@ public class CustomTaleController {
     @PutMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> modifyCustomTalePublicStatus(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(customTaleId);
+        SuccessResponse successResponse = customTaleService.modifyCustomTalePublicStatus(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }
@@ -115,7 +120,7 @@ public class CustomTaleController {
     @DeleteMapping("/{customTaleId}")
     public ResponseEntity<SuccessResponse> deleteCustomTale(@RequestHeader("Authorization") String accessToken, @Parameter(example = "2") @PathVariable Long customTaleId) {
         Long userId = customTaleService.findUserAuthorization(accessToken);
-        SuccessResponse successResponse = customTaleService.deleteCustomTale(customTaleId);
+        SuccessResponse successResponse = customTaleService.deleteCustomTale(userId, customTaleId);
         return ResponseEntity.ok()
                 .body(successResponse);
     }

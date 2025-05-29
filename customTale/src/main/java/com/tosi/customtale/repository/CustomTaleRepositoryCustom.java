@@ -10,9 +10,11 @@ import java.util.Optional;
 
 public interface CustomTaleRepositoryCustom {
 
-    List<CustomTaleDto> findCustomTaleListByUserId(Long userId, Pageable pageable);
+    List<Long> findCustomTaleIdListByUserId(Long userId, Pageable pageable);
 
-    List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable);
+    List<Long> findPublicCustomTaleIdList(Pageable pageable);
+
+    List<CustomTaleDto> findCustomTaleList(List<Long> customTaleIds);
 
     Optional<CustomTaleDetailResponseDto> findCustomTaleDetail(Long customTaleId);
 }

@@ -7,5 +7,5 @@ public interface S3Service {
 
     String findS3URL(String s3key);
 
-    String addCustomImageToS3(String customImageURL, Long userId);
+    String uploadImage(String customImageURL, Long userId);
 }

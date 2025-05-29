@@ -23,27 +23,22 @@ public class CustomTaleRepositoryCustomImpl implements CustomTaleRepositoryCusto
     private final JPAQueryFactory queryFactory;
 
     /**
-     * 해당 회원 번호의 CustomTale 엔티티 리스트를 CustomTaleDto 리스트로 변환하여 반환합니다.
+     * 해당 회원 번호의 CustomTale 엔티티의 id 리스트를 반환합니다.
      * 최신순으로 정렬합니다.
      *
      * @param userId   회원 번호
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
-     * @return CustomTaleDto 객체 리스트
+     * @return CustomTale 객체 id 리스트
      */
     @Override
-    public List<CustomTaleDto> findCustomTaleListByUserId(Long userId, Pageable pageable) {
+    public List<Long> findCustomTaleIdListByUserId(Long userId, Pageable pageable) {
         QCustomTale qCustomTale = QCustomTale.customTale;
         // QCustomTale의 엔티티 타입(CustomTale)과 테이블명을 참조하여 custom-tales 테이블의 컬럼을 참조할 동적 경로 생성
         PathBuilder<CustomTale> pathBuilder = new PathBuilder<>(CustomTale.class, qCustomTale.getMetadata().getName());
         // Pageable 객체의 Sort 정보를 QueryDSL에서 사용하는 OrderSpecifier로 변환
         List<OrderSpecifier> orders = getOrderSpecifiers(pageable.getSort(), pathBuilder);
 
-        return queryFactory.select(new QCustomTaleDto(
-                        qCustomTale.customTaleId,
-                        qCustomTale.title,
-                        qCustomTale.imageS3Key,
-                        qCustomTale.isPublic
-                ))
+        return queryFactory.select(qCustomTale.customTaleId)
                 .from(qCustomTale)
                 .where(qCustomTale.userId.eq(userId))
                 .offset(pageable.getOffset())
@@ -53,20 +48,38 @@ public class CustomTaleRepositoryCustomImpl implements CustomTaleRepositoryCusto
     }
 
     /**
-     * 공개 여부가 true인 CustomTale 엔티티 리스트를 CustomTaleDto 리스트로 변환하여 반환합니다.
+     * 공개 여부가 true인 CustomTale 엔티티의 id 리스트를 반환합니다.
      * 최신순으로 정렬합니다.
      *
      * @param pageable 페이지 번호, 페이지 크기, 정렬 기준 및 방향을 담고 있는 Pageable 객체
      * @return CustomTaleDto 객체 리스트
      */
     @Override
-    public List<CustomTaleDto> findPublicCustomTaleList(Pageable pageable) {
+    public List<Long> findPublicCustomTaleIdList(Pageable pageable) {
         QCustomTale qCustomTale = QCustomTale.customTale;
         // QCustomTale의 엔티티 타입(CustomTale)과 테이블명을 참조하여 custom-tales 테이블의 컬럼을 참조할 동적 경로 생성
         PathBuilder<CustomTale> pathBuilder = new PathBuilder<>(CustomTale.class, qCustomTale.getMetadata().getName());
         // Pageable 객체의 Sort 정보를 QueryDSL에서 사용하는 OrderSpecifier로 변환
         List<OrderSpecifier> orders = getOrderSpecifiers(pageable.getSort(), pathBuilder);
 
+        return queryFactory.select(qCustomTale.customTaleId)
+                .from(qCustomTale)
+                .where(qCustomTale.isPublic.eq(true))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(orders.toArray(new OrderSpecifier[0]))
+                .fetch();
+    }
+
+    /**
+     * 해당 번호 목록에 해당하는 CustomTale 엔티티 리스트를 반환합니다.
+     *
+     * @param customTaleIds 커스텀 동화 번호 목록
+     * @return CustomTaleDto 객체 리스트
+     */
+    @Override
+    public List<CustomTaleDto> findCustomTaleList(List<Long> customTaleIds) {
+        QCustomTale qCustomTale = QCustomTale.customTale;
         return queryFactory.select(new QCustomTaleDto(
                         qCustomTale.customTaleId,
                         qCustomTale.title,
@@ -74,10 +87,7 @@ public class CustomTaleRepositoryCustomImpl implements CustomTaleRepositoryCusto
                         qCustomTale.isPublic
                 ))
                 .from(qCustomTale)
-                .where(qCustomTale.isPublic.eq(true))
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .orderBy(orders.toArray(new OrderSpecifier[0]))
+                .where(qCustomTale.customTaleId.in(customTaleIds))
                 .fetch();
     }
 
