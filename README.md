@@ -1,7 +1,7 @@
 # :rabbit: TOSI(The Only Story In the world)를 소개합니다. :tada:
 
 <div align="center">
-<img src="assets/tosi.png" width="" height="150"></img>
+<img src="./assets/tosi.png" width="" height="150"></img>
 
 **TOSI는 어린이들이 혼자서도 재미있게 독서할 수 있는 인터랙티브 동화 구연 서비스입니다.** <br>
 저희 서비스를 통해 '토씨 하나 빼놓지 않고' 이야기에 집중할 수 있습니다. <br>
@@ -12,10 +12,10 @@
 # :sparkle: 서비스 목표
 
 동화 **등장인물의 이름을 아이의 이름으로 바꿔** TTS로 읽어주며, <br>
-아이 혼자서도 동화를 즐길 수 있어서서 미디어 소비 대신 독서 습관 형성을 돕습니다.
+아이 혼자서도 동화에 몰입할 수 있어 미디어 소비 대신 독서 습관 형성을 돕습니다.
 
 동화가 끝나면 OpenAI API를 활용해 **원하는 등장인물과 채팅**하면서, <br>
-이야기에 능동적으로 참여하여 더 몰입감 있는 독서 경험을 제공합니다.
+동화 속 캐릭터들과 상호작용하여 어휘력 및 사회성을 향상시킵니다.
 
 **원하는 키워드와 배경**으로 OpenAI API를 활용해 **커스텀 동화를 제작**하면서, <br>
 매번 새로운 이야기와 삽화로 아이의 상상력을 자극합니다.
@@ -58,7 +58,7 @@ _2차 리팩토링_
 | **Infra**    | ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=for-the-badge&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/kubernetes-%23326CE5.svg?style=for-the-badge&logo=kubernetes&logoColor=white) ![Amazon RDS](https://img.shields.io/badge/Amazon%20RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white) ![Amazon S3](https://img.shields.io/badge/Amazon%20S3-569A31.svg?style=for-the-badge&logo=amazons3&logoColor=white) ![Route 53](https://img.shields.io/badge/Route%2053-6A34D1.svg?style=for-the-badge&logo=amazonroute53&logoColor=white) ![AWS EKS](https://img.shields.io/badge/AWS%20EKS-%23FF9900.svg?style=for-the-badge&logo=amazoneks&logoColor=white) |
 | **DevTool**  | ![GitHub](https://img.shields.io/badge/GitHub-181717.svg?style=for-the-badge&logo=github&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=for-the-badge&logo=githubactions&logoColor=white) ![OpenAPI](https://img.shields.io/badge/OpenAPI-85EA2D.svg?style=for-the-badge&logo=swagger&logoColor=black) ![IntelliJ](https://img.shields.io/badge/IntelliJ%20IDEA-000000?style=for-the-badge&logo=intellijidea&logoColor=white) ![VSCode](https://img.shields.io/badge/Visual%20Studio%20Code-007ACC?style=for-the-badge&logo=&logoColor=white)                                                                                                                     |
 
-## :art: TOSI-CusstomTale 관련 서비스 화면
+## :art: TOSI-CustomTale 관련 서비스 화면
 
 <table>
   <tr>
